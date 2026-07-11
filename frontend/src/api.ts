@@ -1,11 +1,30 @@
 // Thin fetch wrapper for the FAO-56 backend API.
 const BASE = "";
 
+export const auth = {
+  get token() { return localStorage.getItem("token"); },
+  set token(v: string | null) {
+    if (v) localStorage.setItem("token", v);
+    else localStorage.removeItem("token");
+  },
+  logout() { localStorage.removeItem("token"); location.reload(); },
+};
+
+function authHeaders(): Record<string, string> {
+  const t = auth.token;
+  return t ? { Authorization: `Bearer ${t}` } : {};
+}
+
 async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
   const res = await fetch(BASE + path, {
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     ...opts,
   });
+  if (res.status === 401) {
+    auth.token = null;
+    if (!path.endsWith("/login")) location.reload();
+    throw new Error("Not authenticated");
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try {
@@ -15,6 +34,22 @@ async function req<T>(path: string, opts: RequestInit = {}): Promise<T> {
   }
   if (res.status === 204) return undefined as T;
   return res.json();
+}
+
+// Authenticated file download (reports can't use plain <a href> because the
+// bearer token must be attached).
+async function downloadFile(path: string, fallbackName: string): Promise<void> {
+  const res = await fetch(BASE + path, { headers: authHeaders() });
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+  const blob = await res.blob();
+  const cd = res.headers.get("Content-Disposition") || "";
+  const m = cd.match(/filename="?([^"]+)"?/);
+  const name = m ? m[1] : fallbackName;
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
 }
 
 export interface Crop {
@@ -29,6 +64,10 @@ export interface Soil {
 }
 export interface System {
   id: number; name_en: string; name_ar: string; default_efficiency_pct: number;
+}
+export interface City {
+  id: number; name_en: string; name_ar: string; country: string;
+  region: string; latitude: number; longitude: number; elevation: number;
 }
 export interface Project {
   id: number; project_name: string; farm_name: string; field_name: string;
@@ -55,11 +94,22 @@ export interface Summary {
 }
 
 export const api = {
+  login: (username: string, password: string) =>
+    req<{ token: string; username: string; full_name: string }>(
+      "/api/auth/login", { method: "POST", body: JSON.stringify({ username, password }) }),
+  me: () => req<{ username: string; full_name: string }>("/api/auth/me"),
+  changePassword: (current_password: string, new_password: string) =>
+    req<any>("/api/auth/change-password",
+      { method: "POST", body: JSON.stringify({ current_password, new_password }) }),
+
   crops: (category?: string) =>
     req<Crop[]>(`/api/catalog/crops${category ? `?category=${encodeURIComponent(category)}` : ""}`),
   categories: () => req<string[]>("/api/catalog/categories"),
   soils: () => req<Soil[]>("/api/catalog/soils"),
   systems: () => req<System[]>("/api/catalog/systems"),
+  cities: (region?: string) =>
+    req<City[]>(`/api/catalog/cities${region ? `?region=${encodeURIComponent(region)}` : ""}`),
+  regions: () => req<string[]>("/api/catalog/regions"),
   projects: () => req<Project[]>("/api/projects"),
   project: (id: number) => req<Project>(`/api/projects/${id}`),
   createProject: (body: any) =>
@@ -85,12 +135,20 @@ export const api = {
     if (!res.ok) throw new Error((await res.json()).detail ?? res.statusText);
     return res.json();
   },
+  fetchWeather: (id: number, source: "nasa" | "open-meteo", start?: string, end?: string) => {
+    const q = new URLSearchParams({ source });
+    if (start) q.set("start", start);
+    if (end) q.set("end", end);
+    return req<{ inserted: number; source: string; start: string; end: string }>(
+      `/api/projects/${id}/climate/fetch?${q.toString()}`, { method: "POST" });
+  },
   dashboard: (id: number) => req<any>(`/api/projects/${id}/dashboard`),
   schedule: (id: number) =>
     req<{ daily: DailyRow[]; summary: Summary }>(`/api/projects/${id}/schedule`),
   calendar: (id: number) => req<{ events: any[] }>(`/api/projects/${id}/calendar`),
   etoDetail: (id: number, date: string) =>
     req<any>(`/api/projects/${id}/eto-detail?the_date=${date}`),
-  reportExcelUrl: (id: number) => `/api/projects/${id}/report/excel`,
-  reportCsvUrl: (id: number) => `/api/projects/${id}/report/csv`,
+  downloadExcel: (id: number) => downloadFile(`/api/projects/${id}/report/excel`, "report.xlsx"),
+  downloadCsv: (id: number) => downloadFile(`/api/projects/${id}/report/csv`, "schedule.csv"),
+  downloadPdf: (id: number) => downloadFile(`/api/projects/${id}/report/pdf`, "report.pdf"),
 };

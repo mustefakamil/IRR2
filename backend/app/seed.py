@@ -6,7 +6,7 @@ import os
 from datetime import date
 
 from .database import Base, engine, SessionLocal
-from . import models, seed_data
+from . import models, seed_data, auth
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 RIYADH_CLIMATE = os.path.join(DATA_DIR, "riyadh_climate.json")
@@ -27,6 +27,25 @@ def seed_catalogs(db) -> None:
     if db.query(models.IrrigationSystem).count() == 0:
         for row in seed_data.SYSTEMS:
             db.add(models.IrrigationSystem(**dict(zip(seed_data.SYSTEM_FIELDS, row))))
+    if db.query(models.City).count() == 0:
+        for row in seed_data.CITIES:
+            db.add(models.City(**dict(zip(seed_data.CITY_FIELDS, row))))
+    db.commit()
+
+
+def seed_default_user(db) -> None:
+    """Create the default admin user if no users exist.
+
+    Credentials come from ADMIN_USERNAME / ADMIN_PASSWORD env vars (defaults:
+    admin / admin123). Change the password after first login.
+    """
+    if db.query(models.User).count() > 0:
+        return
+    username = os.environ.get("ADMIN_USERNAME", "admin")
+    password = os.environ.get("ADMIN_PASSWORD", "admin123")
+    pw_hash, salt = auth.hash_password(password)
+    db.add(models.User(username=username, password_hash=pw_hash, salt=salt,
+                       full_name="Administrator"))
     db.commit()
 
 
@@ -73,6 +92,7 @@ def init_db(with_sample: bool = True) -> None:
     db = SessionLocal()
     try:
         seed_catalogs(db)
+        seed_default_user(db)
         if with_sample and db.query(models.Project).count() == 0:
             create_sample_project(db)
     finally:

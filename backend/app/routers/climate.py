@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import csv
 import io
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from .. import models, schemas
+from .. import models, schemas, weather
 
 router = APIRouter(prefix="/api/projects/{project_id}/climate", tags=["climate"])
 
@@ -64,6 +64,57 @@ def clear_climate(project_id: int, db: Session = Depends(get_db)):
     _proj(db, project_id)
     db.query(models.ClimateData).filter_by(project_id=project_id).delete()
     db.commit()
+
+
+@router.post("/fetch", response_model=dict)
+def fetch_weather(project_id: int, source: str = "nasa",
+                  start: date | None = None, end: date | None = None,
+                  replace: bool = True, db: Session = Depends(get_db)):
+    """Fetch daily climate from an external provider (nasa | open-meteo).
+
+    Defaults to the crop's growing season starting at the planting date, clamped
+    so it never requests future dates (providers only have historical data).
+    """
+    proj = _proj(db, project_id)
+    if source not in weather.PROVIDERS:
+        raise HTTPException(400, f"Unknown source '{source}'. Use: {list(weather.PROVIDERS)}")
+
+    if not start:
+        start = proj.planting_date
+    if not end:
+        season = (proj.crop.l_ini + proj.crop.l_dev + proj.crop.l_mid + proj.crop.l_late)
+        end = start + timedelta(days=season - 1)
+    yesterday = date.today() - timedelta(days=2)
+    if end > yesterday:
+        end = yesterday
+    if start > end:
+        raise HTTPException(400, "Requested start date is in the future; providers "
+                                 "only supply historical data. Adjust the planting date "
+                                 "or date range.")
+
+    try:
+        rows = weather.PROVIDERS[source](proj.latitude, proj.longitude, start, end)
+    except Exception as e:  # network / provider errors
+        raise HTTPException(502, f"{source} request failed: {e}")
+
+    if not rows:
+        raise HTTPException(502, f"{source} returned no usable data for this location/range.")
+
+    if replace:
+        db.query(models.ClimateData).filter_by(project_id=project_id).delete()
+    inserted = 0
+    for r in rows:
+        the_date = date.fromisoformat(r["date"])
+        db.add(models.ClimateData(
+            project_id=project_id, the_date=the_date, julian_day=_julian(the_date),
+            tmax=r["tmax"], tmin=r["tmin"], wind_speed=r["wind"] or 2.0,
+            rainfall=r["rainfall"] or 0.0, rh_max=r["rh_max"], rh_min=r["rh_min"],
+            rh_mean=r["rh_mean"], solar_rad=r["rs"],
+        ))
+        inserted += 1
+    db.commit()
+    return {"inserted": inserted, "source": source,
+            "start": start.isoformat(), "end": end.isoformat()}
 
 
 # --- CSV / Excel upload -----------------------------------------------------

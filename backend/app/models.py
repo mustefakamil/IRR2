@@ -49,6 +49,27 @@ class IrrigationSystem(Base):
     default_efficiency_pct: Mapped[float]
 
 
+class City(Base):
+    __tablename__ = "cities"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name_en: Mapped[str] = mapped_column(String, index=True)
+    name_ar: Mapped[str] = mapped_column(String, default="")
+    country: Mapped[str] = mapped_column(String, default="Saudi Arabia")
+    region: Mapped[str] = mapped_column(String, index=True)
+    latitude: Mapped[float]
+    longitude: Mapped[float]
+    elevation: Mapped[float]
+
+
+class User(Base):
+    __tablename__ = "users"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    username: Mapped[str] = mapped_column(String, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String)
+    salt: Mapped[str] = mapped_column(String)
+    full_name: Mapped[str] = mapped_column(String, default="")
+
+
 class Project(Base):
     __tablename__ = "projects"
     id: Mapped[int] = mapped_column(primary_key=True)

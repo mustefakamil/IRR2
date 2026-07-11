@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { api, Crop, Soil, System, Project } from "../api";
+import { useEffect, useMemo, useState } from "react";
+import { api, Crop, Soil, System, City, Project } from "../api";
 import { useLang } from "../i18n";
 
 const empty = {
-  project_name: "", farm_name: "", field_name: "", country: "", region: "", city: "",
+  project_name: "", farm_name: "", field_name: "", country: "Saudi Arabia", region: "", city: "",
   latitude: 24.0, longitude: 46.7, elevation: 600, wind_height: 2,
   area_value: 1, area_unit: "ha", planting_date: new Date().toISOString().slice(0, 10),
   crop_id: 0, soil_id: 0, system_id: 0, efficiency_pct: 90, ecw: 0, ece: 0,
@@ -18,15 +18,34 @@ export function ProjectForm({ editId, onSaved }:
   const [crops, setCrops] = useState<Crop[]>([]);
   const [soils, setSoils] = useState<Soil[]>([]);
   const [systems, setSystems] = useState<System[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    Promise.all([api.crops(), api.soils(), api.systems()]).then(([c, s, sy]) => {
-      setCrops(c); setSoils(s); setSystems(sy);
+    Promise.all([api.crops(), api.soils(), api.systems(), api.cities()]).then(([c, s, sy, ct]) => {
+      setCrops(c); setSoils(s); setSystems(sy); setCities(ct);
       setF((prev: any) => ({ ...prev, crop_id: prev.crop_id || c[0]?.id, soil_id: prev.soil_id || s[0]?.id, system_id: prev.system_id || sy[0]?.id }));
     });
   }, []);
+
+  const regions = useMemo(
+    () => Array.from(new Set(cities.map((c) => c.region))).sort(), [cities]);
+  const citiesInRegion = useMemo(
+    () => cities.filter((c) => c.region === f.region), [cities, f.region]);
+
+  const onRegion = (region: string) => set("region", region);
+  const onCity = (name: string) => {
+    const city = cities.find((c) => c.name_en === name && c.region === f.region);
+    if (city) {
+      setF((prev: any) => ({
+        ...prev, city: city.name_en, region: city.region, country: city.country,
+        latitude: city.latitude, longitude: city.longitude, elevation: city.elevation,
+      }));
+    } else {
+      set("city", name);
+    }
+  };
 
   useEffect(() => {
     if (editId) api.project(editId).then((p) => setF({ ...p }));
@@ -68,15 +87,30 @@ export function ProjectForm({ editId, onSaved }:
         <Field label={t("field_name")}><input value={f.field_name} onChange={(e) => set("field_name", e.target.value)} /></Field>
       </div>
 
-      <div className="section-title">📍 {t("region")}</div>
+      <div className="section-title">📍 {t("region_sel")}</div>
       <div className="form-grid">
         <Field label={t("country")}><input value={f.country} onChange={(e) => set("country", e.target.value)} /></Field>
-        <Field label={t("region")}><input value={f.region} onChange={(e) => set("region", e.target.value)} /></Field>
-        <Field label={t("city")}><input value={f.city} onChange={(e) => set("city", e.target.value)} /></Field>
-        <Field label={t("latitude")}><input type="number" step="0.01" value={f.latitude} onChange={(e) => set("latitude", e.target.value)} /></Field>
-        <Field label={t("longitude")}><input type="number" step="0.01" value={f.longitude} onChange={(e) => set("longitude", e.target.value)} /></Field>
-        <Field label={t("elevation")}><input type="number" value={f.elevation} onChange={(e) => set("elevation", e.target.value)} /></Field>
+        <Field label={t("region_sel")}>
+          <select value={f.region} onChange={(e) => onRegion(e.target.value)}>
+            <option value="">—</option>
+            {regions.map((r) => <option key={r} value={r}>{r}</option>)}
+          </select>
+        </Field>
+        <Field label={t("city_sel")}>
+          <select value={f.city} onChange={(e) => onCity(e.target.value)} disabled={!f.region}>
+            <option value="">—</option>
+            {citiesInRegion.map((c) => (
+              <option key={c.id} value={c.name_en}>
+                {lang === "ar" ? c.name_ar : c.name_en}
+              </option>
+            ))}
+          </select>
+        </Field>
       </div>
+      <p style={{ color: "var(--muted)", fontSize: 12, margin: "2px 0 0" }}>
+        ℹ️ {t("auto_coords")}
+        {f.city && ` (${f.latitude}°, ${f.longitude}°, ${f.elevation} m)`}
+      </p>
 
       <div className="section-title">📐 {t("area")}</div>
       <div className="form-grid">

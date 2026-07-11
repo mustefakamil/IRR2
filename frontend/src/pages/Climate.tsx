@@ -7,6 +7,8 @@ export function Climate({ project, onChanged }: { project: Project | null; onCha
   const [rows, setRows] = useState<any[]>([]);
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [start, setStart] = useState("");
+  const [end, setEnd] = useState("");
   const fileRef = useRef<HTMLInputElement>(null);
 
   const load = () => { if (project) api.climate(project.id).then(setRows).catch((e) => setErr(e.message)); };
@@ -29,9 +31,35 @@ export function Climate({ project, onChanged }: { project: Project | null; onCha
     await api.clearClimate(project.id); load(); onChanged();
   };
 
+  const fetchWx = async (source: "nasa" | "open-meteo") => {
+    setBusy(true); setErr(null);
+    try {
+      const r = await api.fetchWeather(project.id, source, start || undefined, end || undefined);
+      load(); onChanged();
+      alert(`${r.inserted} days imported from ${source}\n${r.start} → ${r.end}`);
+    } catch (e: any) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
   return (
     <>
       {err && <div className="err" style={{ marginBottom: 14 }}>{err}</div>}
+
+      <div className="card" style={{ marginBottom: 16 }}>
+        <h3 style={{ margin: "0 0 4px" }}>🛰️ {t("climate")} — Weather APIs</h3>
+        <p style={{ color: "var(--muted)", fontSize: 12.5, marginTop: 0 }}>
+          📍 {project.city || "—"} ({project.latitude}°, {project.longitude}°) · {t("auto_season")}
+        </p>
+        <div className="row" style={{ alignItems: "flex-end" }}>
+          <div className="field"><label>{t("from_date")}</label>
+            <input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
+          <div className="field"><label>{t("to_date")}</label>
+            <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
+          <button className="btn" disabled={busy} onClick={() => fetchWx("nasa")}>🛰️ {t("fetch_nasa")}</button>
+          <button className="btn secondary" disabled={busy} onClick={() => fetchWx("open-meteo")}>🌍 {t("fetch_meteo")}</button>
+        </div>
+        {busy && <p style={{ color: "var(--muted)", fontSize: 12.5 }}>{t("fetching")}</p>}
+      </div>
       <div className="card" style={{ marginBottom: 16 }}>
         <div className="row between">
           <div>

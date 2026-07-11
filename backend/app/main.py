@@ -14,9 +14,11 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 
 from .seed import init_db
-from .routers import catalog, projects, climate, scheduling, reports
+from .auth import require_auth
+from .routers import catalog, projects, climate, scheduling, reports, auth_router
+from fastapi import Depends
 
-app = FastAPI(title="Smart Irrigation Scheduling Platform — FAO-56", version="1.0.0")
+app = FastAPI(title="Smart Irrigation Scheduling Platform — FAO-56", version="1.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,11 +27,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(catalog.router)
-app.include_router(projects.router)
-app.include_router(climate.router)
-app.include_router(scheduling.router)
-app.include_router(reports.router)
+# Auth endpoints are public; everything else requires a valid bearer token.
+app.include_router(auth_router.router)
+_protected = [Depends(require_auth)]
+app.include_router(catalog.router, dependencies=_protected)
+app.include_router(projects.router, dependencies=_protected)
+app.include_router(climate.router, dependencies=_protected)
+app.include_router(scheduling.router, dependencies=_protected)
+app.include_router(reports.router, dependencies=_protected)
 
 
 @app.on_event("startup")

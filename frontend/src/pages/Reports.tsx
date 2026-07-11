@@ -33,8 +33,9 @@ export function Reports({ project }: { project: Project | null }) {
     <>
       {err && <div className="err" style={{ marginBottom: 14 }}>{err}</div>}
       <div className="row" style={{ marginBottom: 18 }}>
-        <a className="btn" href={api.reportExcelUrl(project.id)}>⬇️ {t("download_excel")}</a>
-        <a className="btn secondary" href={api.reportCsvUrl(project.id)}>⬇️ {t("download_csv")}</a>
+        <button className="btn danger" onClick={() => api.downloadPdf(project.id).catch((e) => setErr(e.message))}>📄 {t("download_pdf")}</button>
+        <button className="btn" onClick={() => api.downloadExcel(project.id).catch((e) => setErr(e.message))}>⬇️ {t("download_excel")}</button>
+        <button className="btn secondary" onClick={() => api.downloadCsv(project.id).catch((e) => setErr(e.message))}>⬇️ {t("download_csv")}</button>
       </div>
 
       <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))" }}>

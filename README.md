@@ -122,6 +122,42 @@ Climate can be entered three ways (spec §4):
 
 ---
 
+## Authentication
+
+The app is protected by a username/password login. A default admin user is
+created on first boot:
+
+| | |
+|--|--|
+| Username | `admin` |
+| Password | `admin123` |
+
+**Change these in production** via environment variables `ADMIN_USERNAME` and
+`ADMIN_PASSWORD` (applied when the database is first seeded), and set a stable
+`SECRET_KEY` so login tokens survive restarts. Change the password after login
+via the API `POST /api/auth/change-password`.
+
+## Weather data (NASA POWER & Open-Meteo)
+
+On the **Climate Data** page you can auto-fill a project's daily climate from:
+
+* **NASA POWER** — global historical daily data (T2M, RH2M, WS2M @2 m,
+  ALLSKY_SFC_SW_DWN, precipitation). Units are read from the response and solar
+  is converted to MJ/m²/day.
+* **Open-Meteo** (ERA5 archive) — temperature, precipitation, 10 m wind
+  (converted to 2 m via FAO-56 Eq. 47), shortwave radiation (MJ/m²), and hourly
+  humidity aggregated to daily max/min.
+
+Coordinates come from the selected **city** (a built-in database of ~95 Saudi
+cities across all 13 regions, each with latitude/longitude/elevation). Leave the
+date range empty to fetch the crop's whole growing season automatically.
+
+## Reports
+
+* **PDF** — a formatted one-page engineering report (reportlab).
+* **Excel** — Summary sheet + full daily schedule.
+* **CSV** — the daily schedule table.
+
 ## Deploy to Render
 
 This repo ships a **Dockerfile** (multi-stage: Node builds the UI, Python serves

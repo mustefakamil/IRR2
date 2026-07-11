@@ -55,3 +55,17 @@ def list_systems(db: Session = Depends(get_db)):
 def list_categories(db: Session = Depends(get_db)):
     rows = db.query(models.Crop.category).distinct().all()
     return sorted({r[0] for r in rows})
+
+
+@router.get("/cities", response_model=list[schemas.CityOut])
+def list_cities(region: str | None = None, db: Session = Depends(get_db)):
+    q = db.query(models.City)
+    if region:
+        q = q.filter(models.City.region == region)
+    return q.order_by(models.City.region, models.City.name_en).all()
+
+
+@router.get("/regions")
+def list_regions(db: Session = Depends(get_db)):
+    rows = db.query(models.City.region).distinct().all()
+    return sorted({r[0] for r in rows})

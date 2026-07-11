@@ -81,6 +81,23 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   full: { en: "Full Irrigation (refill to FC)", ar: "ري كامل (إعادة للسعة الحقلية)" },
   mad: { en: "MAD (refill to RAW)", ar: "الاستنزاف المسموح" },
   deficit: { en: "Deficit Irrigation", ar: "ري ناقص" },
+  login: { en: "Sign In", ar: "تسجيل الدخول" },
+  username: { en: "Username", ar: "اسم المستخدم" },
+  password: { en: "Password", ar: "كلمة المرور" },
+  logout: { en: "Sign Out", ar: "تسجيل الخروج" },
+  login_error: { en: "Invalid username or password", ar: "اسم المستخدم أو كلمة المرور غير صحيحة" },
+  welcome: { en: "Welcome back", ar: "مرحباً بعودتك" },
+  region_sel: { en: "Region", ar: "المنطقة" },
+  city_sel: { en: "City", ar: "المدينة" },
+  auto_coords: { en: "Coordinates & elevation are set automatically from the selected city.", ar: "يتم ضبط الإحداثيات والارتفاع تلقائياً من المدينة المختارة." },
+  fetch_nasa: { en: "Fetch from NASA POWER", ar: "جلب من NASA POWER" },
+  fetch_meteo: { en: "Fetch from Open-Meteo", ar: "جلب من Open-Meteo" },
+  fetching: { en: "Fetching weather…", ar: "جارٍ جلب الطقس…" },
+  from_date: { en: "From", ar: "من" },
+  to_date: { en: "To", ar: "إلى" },
+  auto_season: { en: "Leave dates empty to use the crop's growing season.", ar: "اترك التواريخ فارغة لاستخدام موسم نمو المحصول." },
+  download_pdf: { en: "Download PDF Report", ar: "تحميل تقرير PDF" },
+  change_password: { en: "Change Password", ar: "تغيير كلمة المرور" },
 };
 
 export function makeT(lang: Lang) {

@@ -49,6 +49,17 @@ class SystemOut(ORMModel):
     default_efficiency_pct: float
 
 
+class CityOut(ORMModel):
+    id: int
+    name_en: str
+    name_ar: str
+    country: str
+    region: str
+    latitude: float
+    longitude: float
+    elevation: float
+
+
 # --- Projects ---------------------------------------------------------------
 class ProjectBase(BaseModel):
     project_name: str
