@@ -1,0 +1,13 @@
+# Render Blueprint — deploy with one click from the repo.
+# In Render: New + -> Blueprint -> connect this GitHub repo.
+services:
+  - type: web
+    name: fao56-irrigation
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

@@ -1,0 +1,15 @@
+# Keep the build context small and reproducible
+**/__pycache__/
+**/*.pyc
+.git/
+.gitignore
+.venv/
+venv/
+backend/.pytest_cache/
+backend/data/irrigation.db
+frontend/node_modules/
+frontend/dist/
+*.md
+!README.md
+.vscode/
+.idea/

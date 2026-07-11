@@ -1,0 +1,93 @@
+import { useEffect, useState } from "react";
+import { api, Project, Summary } from "../api";
+import { useLang } from "../i18n";
+
+export function Reports({ project }: { project: Project | null }) {
+  const { t, lang } = useLang();
+  const [summary, setSummary] = useState<Summary | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!project) { setSummary(null); return; }
+    api.schedule(project.id).then((r) => setSummary(r.summary)).catch((e) => setErr(e.message));
+  }, [project?.id]);
+
+  if (!project) return <div className="empty-state"><div className="big">📄</div><p>{t("no_project")}</p></div>;
+
+  const c = project.crop, s = project.soil, sy = project.system;
+  const info: [string, any][] = [
+    [t("project_name"), project.project_name], [t("farm_name"), project.farm_name || "—"],
+    [t("field_name"), project.field_name || "—"],
+    [t("city"), `${project.city || "—"}, ${project.region || ""} ${project.country || ""}`],
+    [`${t("latitude")} / ${t("longitude")}`, `${project.latitude} / ${project.longitude}`],
+    [t("elevation"), `${project.elevation} m`],
+    [t("area"), `${project.area_value} ${project.area_unit}`],
+    [t("planting_date"), project.planting_date],
+    [t("crop"), lang === "ar" ? c.name_ar : `${c.name_en} (${c.scientific_name})`],
+    [t("soil"), `${s.name_en} — FC ${s.theta_fc}, WP ${s.theta_wp}`],
+    [t("system"), `${sy.name_en} @ ${project.efficiency_pct}%`],
+    ["ECw / ECe", `${project.ecw} / ${project.ece} dS/m`],
+  ];
+
+  return (
+    <>
+      {err && <div className="err" style={{ marginBottom: 14 }}>{err}</div>}
+      <div className="row" style={{ marginBottom: 18 }}>
+        <a className="btn" href={api.reportExcelUrl(project.id)}>⬇️ {t("download_excel")}</a>
+        <a className="btn secondary" href={api.reportCsvUrl(project.id)}>⬇️ {t("download_csv")}</a>
+      </div>
+
+      <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))" }}>
+        <div className="card">
+          <h3>📋 Project Information</h3>
+          <div className="kv">
+            {info.map(([k, v]) => <div key={k} style={{ display: "contents" }}>
+              <span className="k">{k}</span><span className="v">{v}</span></div>)}
+          </div>
+        </div>
+
+        <div className="card">
+          <h3>🌱 Crop Parameters (FAO-56)</h3>
+          <div className="kv">
+            <span className="k">Stages Lini/Ldev/Lmid/Llate</span><span className="v">{c.l_ini}/{c.l_dev}/{c.l_mid}/{c.l_late} d</span>
+            <span className="k">Kc ini / mid / end</span><span className="v">{c.kc_ini} / {c.kc_mid} / {c.kc_end}</span>
+            <span className="k">Root depth Zr</span><span className="v">{c.zr_min}–{c.zr_max} m</span>
+            <span className="k">Depletion fraction p</span><span className="v">{c.p}</span>
+            <span className="k">Yield response Ky</span><span className="v">{c.ky}</span>
+            <span className="k">Source</span><span className="v"><span className={"pill " + c.source}>{c.source}</span></span>
+          </div>
+        </div>
+
+        {summary && (
+          <div className="card">
+            <h3>💧 Water Requirement Summary</h3>
+            <div className="kv">
+              <span className="k">Season length</span><span className="v">{summary.days} days</span>
+              <span className="k">Number of irrigations</span><span className="v">{summary.n_irrigations}</span>
+              <span className="k">Total ETo</span><span className="v">{summary.total_eto} mm</span>
+              <span className="k">Total ETc (crop water req.)</span><span className="v">{summary.total_etc} mm</span>
+              <span className="k">Effective rainfall</span><span className="v">{summary.total_effective_rain} mm</span>
+              <span className="k">Net irrigation depth</span><span className="v">{summary.total_net_depth} mm</span>
+              <span className="k">Gross irrigation depth</span><span className="v">{summary.total_gross_depth} mm</span>
+              <span className="k">Net water volume</span><span className="v">{summary.total_net_volume_m3} m³</span>
+              <span className="k">Gross water volume</span><span className="v">{summary.total_gross_volume_m3} m³</span>
+              <span className="k">Total pump runtime</span><span className="v">{summary.total_runtime_hours} h</span>
+            </div>
+          </div>
+        )}
+
+        <div className="card">
+          <h3>📐 FAO-56 Methodology</h3>
+          <div className="formula-box">ETo = FAO-56 Penman-Monteith (Eq. 6)</div>
+          <div className="formula-box">ETc = Kc × ETo</div>
+          <div className="formula-box">TAW = 1000·(θFC−θWP)·Zr &nbsp; RAW = p·TAW</div>
+          <div className="formula-box">Irrigate when Dr ≥ RAW &nbsp;·&nbsp; Dg = Dn / ((1−LR)·Ea)</div>
+          <p style={{ color: "var(--muted)", fontSize: 12 }}>
+            Engineering note: reference ET uses the canonical FAO-56 constants (γ=0.000665·P, albedo 0.23,
+            σ=4.903×10⁻⁹). All defaults are user-editable.
+          </p>
+        </div>
+      </div>
+    </>
+  );
+}

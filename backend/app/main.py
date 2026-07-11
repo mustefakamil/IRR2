@@ -1,0 +1,63 @@
+"""FastAPI application entry point.
+
+Serves the JSON API under /api and the built React frontend (if present) as
+static files. On startup it creates the SQLite schema and seeds the reference
+catalogs + demo project.
+"""
+from __future__ import annotations
+
+import os
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse
+
+from .seed import init_db
+from .routers import catalog, projects, climate, scheduling, reports
+
+app = FastAPI(title="Smart Irrigation Scheduling Platform — FAO-56", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(catalog.router)
+app.include_router(projects.router)
+app.include_router(climate.router)
+app.include_router(scheduling.router)
+app.include_router(reports.router)
+
+
+@app.on_event("startup")
+def _startup():
+    init_db(with_sample=True)
+
+
+@app.get("/api/health")
+def health():
+    return {"status": "ok", "platform": "FAO-56 Smart Irrigation"}
+
+
+# --- Serve the built frontend (frontend/dist) if it exists ------------------
+FRONTEND_DIST = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
+
+if os.path.isdir(FRONTEND_DIST):
+    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
+              name="assets")
+
+    @app.get("/{full_path:path}")
+    def spa(full_path: str):
+        if full_path.startswith("api/"):
+            return JSONResponse({"detail": "Not found"}, status_code=404)
+        index = os.path.join(FRONTEND_DIST, "index.html")
+        return FileResponse(index)
+else:
+    @app.get("/")
+    def root():
+        return {"message": "API running. Build the frontend (npm run build) to serve the UI.",
+                "docs": "/docs"}
