@@ -47,8 +47,11 @@ FRONTEND_DIST = os.path.join(
     os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "frontend", "dist")
 
 if os.path.isdir(FRONTEND_DIST):
-    app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIST, "assets")),
-              name="assets")
+    # A separate assets/ dir only exists for multi-file builds. The single-file
+    # build inlines everything into index.html, so guard the mount.
+    _assets = os.path.join(FRONTEND_DIST, "assets")
+    if os.path.isdir(_assets):
+        app.mount("/assets", StaticFiles(directory=_assets), name="assets")
 
     @app.get("/{full_path:path}")
     def spa(full_path: str):

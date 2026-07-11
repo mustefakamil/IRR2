@@ -1,9 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { viteSingleFile } from "vite-plugin-singlefile";
 
-// base './' so the built app works when served by FastAPI from any path.
+// Everything is inlined into one self-contained index.html (viteSingleFile),
+// so the deployed app is a single request — robust on flaky/cold-start hosting.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), viteSingleFile()],
   base: "./",
   server: {
     port: 5173,
