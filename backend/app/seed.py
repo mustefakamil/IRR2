@@ -33,19 +33,25 @@ def seed_catalogs(db) -> None:
     db.commit()
 
 
-def seed_default_user(db) -> None:
-    """Create the default admin user if no users exist.
-
-    Credentials come from ADMIN_USERNAME / ADMIN_PASSWORD env vars (defaults:
-    admin / admin123). Change the password after first login.
-    """
-    if db.query(models.User).count() > 0:
+def _add_user(db, username: str, password: str, full_name: str) -> None:
+    if db.query(models.User).filter_by(username=username).first():
         return
-    username = os.environ.get("ADMIN_USERNAME", "admin")
-    password = os.environ.get("ADMIN_PASSWORD", "admin123")
     pw_hash, salt = auth.hash_password(password)
     db.add(models.User(username=username, password_hash=pw_hash, salt=salt,
-                       full_name="Administrator"))
+                       full_name=full_name))
+
+
+def seed_default_user(db) -> None:
+    """Create the default admin and guest users if missing.
+
+    Admin credentials come from ADMIN_USERNAME / ADMIN_PASSWORD (defaults:
+    admin / admin123). The guest account (guest / guest, override with
+    GUEST_PASSWORD) lets visitors try the platform. Change these in production.
+    """
+    _add_user(db, os.environ.get("ADMIN_USERNAME", "admin"),
+              os.environ.get("ADMIN_PASSWORD", "admin123"), "Administrator")
+    _add_user(db, os.environ.get("GUEST_USERNAME", "guest"),
+              os.environ.get("GUEST_PASSWORD", "guest"), "Guest")
     db.commit()
 
 

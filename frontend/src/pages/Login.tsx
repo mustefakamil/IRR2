@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { api, auth } from "../api";
 import { useLang } from "../i18n";
+import { LogoMark } from "../components/Logo";
 
-export function Login({ onSuccess }: { onSuccess: () => void }) {
+export function Login({ onSuccess, onBack, onGuest }:
+  { onSuccess: () => void; onBack?: () => void; onGuest?: () => void }) {
   const { t, lang, toggle } = useLang();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -25,8 +27,8 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
     <div className="login-wrap">
       <form className="login-card" onSubmit={submit}>
         <div className="login-brand">
-          <span className="logo">🌾</span>
-          <h1>{t("app_title")}</h1>
+          <LogoMark size={62} />
+          <h1><span style={{ color: "#2E7D32" }}>Smart</span><span style={{ color: "#0288D1" }}>Ponics</span></h1>
           <p>{t("app_sub")}</p>
         </div>
         {err && <div className="err" style={{ marginBottom: 12 }}>{err}</div>}
@@ -44,11 +46,19 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
           style={{ width: "100%", justifyContent: "center" }}>
           {busy ? "…" : "🔐 " + t("login")}
         </button>
-        <button type="button" className="btn ghost" onClick={toggle}
-          style={{ width: "100%", justifyContent: "center", marginTop: 10 }}>
-          {lang === "en" ? "🇸🇦 العربية" : "🇬🇧 English"}
-        </button>
-        <p className="login-hint">Default: admin / admin123</p>
+        {onGuest && (
+          <button type="button" className="btn secondary" onClick={onGuest}
+            style={{ width: "100%", justifyContent: "center", marginTop: 10 }}>
+            👤 {t("guest_login")}
+          </button>
+        )}
+        <div className="row" style={{ justifyContent: "space-between", marginTop: 12 }}>
+          {onBack && <button type="button" className="btn ghost" onClick={onBack}>← {t("app_title")}</button>}
+          <button type="button" className="btn ghost" onClick={toggle}>
+            {lang === "en" ? "🇸🇦 العربية" : "🇬🇧 English"}
+          </button>
+        </div>
+        <p className="login-hint">admin / admin123 · guest / guest</p>
       </form>
     </div>
   );

@@ -118,6 +118,28 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   validation_desc: { en: "Compares the model's crop water demand with FAO WaPOR satellite-observed actual evapotranspiration (100 m, open data).", ar: "يقارن الطلب المائي للمحصول من النموذج مع البخر-نتح الفعلي المرصود من قمر WaPOR (١٠٠م، بيانات مفتوحة)." },
   per_dekad: { en: "ETc vs Actual ET (per dekad)", ar: "ETc مقابل ET الفعلي (لكل عشرة أيام)" },
   cumulative: { en: "Cumulative ETc vs Actual ET", ar: "التراكمي ETc مقابل ET الفعلي" },
+  guest_enter: { en: "Continue as Guest", ar: "الدخول كزائر" },
+  guest_login: { en: "Sign in as Guest", ar: "الدخول كزائر" },
+  landing_tagline: {
+    en: "A professional FAO-56 decision-support platform that computes crop water requirements and daily irrigation schedules from multi-source satellite and reanalysis climate data.",
+    ar: "منصة احترافية لدعم القرار وفق FAO-56، تحسب الاحتياجات المائية للمحاصيل وجداول الري اليومية من بيانات مناخية متعددة المصادر (أقمار صناعية وإعادة تحليل).",
+  },
+  f_eto_t: { en: "FAO-56 Penman-Monteith", ar: "بنمان-مونتيث FAO-56" },
+  f_eto_d: { en: "Reference & crop evapotranspiration with full formula transparency.", ar: "البخر-نتح المرجعي والمحصولي مع شفافية كاملة للمعادلات." },
+  f_sources_t: { en: "Multi-Source Climate", ar: "مناخ متعدد المصادر" },
+  f_sources_d: { en: "NASA POWER, ERA5, NOAA, Open-Meteo — auto-merged with quality control.", ar: "NASA POWER و ERA5 و NOAA و Open-Meteo — دمج تلقائي مع ضبط الجودة." },
+  f_crops_t: { en: "Crop & Soil Database", ar: "قاعدة المحاصيل والتربة" },
+  f_crops_d: { en: "81 crops and 12 soils with editable FAO-56 parameters.", ar: "٨١ محصولاً و١٢ نوع تربة بمعاملات FAO-56 قابلة للتعديل." },
+  f_schedule_t: { en: "Smart Scheduling", ar: "جدولة ذكية" },
+  f_schedule_d: { en: "Daily soil-water balance, irrigation triggering, volume and runtime.", ar: "ميزان مائي يومي، قرار الري، الحجم وزمن التشغيل." },
+  f_validate_t: { en: "Satellite Validation", ar: "تحقق فضائي" },
+  f_validate_d: { en: "Validate against FAO WaPOR actual ET (100 m) with visual comparison.", ar: "تحقق مقابل ET الفعلي من FAO WaPOR (١٠٠م) مع مقارنة بيانية." },
+  f_reports_t: { en: "Reports & Calendar", ar: "تقارير وتقويم" },
+  f_reports_d: { en: "PDF, Excel and CSV reports, irrigation calendar and dashboards.", ar: "تقارير PDF و Excel و CSV، وتقويم ري ولوحات معلومات." },
+  s_crops: { en: "Crops", ar: "محصول" },
+  s_cities: { en: "Saudi Cities", ar: "مدينة سعودية" },
+  s_apis: { en: "Climate APIs", ar: "مصادر مناخية" },
+  s_method: { en: "Methodology", ar: "المنهجية" },
 };
 
 export function makeT(lang: Lang) {

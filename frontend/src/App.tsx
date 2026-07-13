@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { api, auth, Project } from "./api";
 import { Lang, LangContext, makeT } from "./i18n";
 import { Login } from "./pages/Login";
+import { Landing } from "./pages/Landing";
+import { LogoMark } from "./components/Logo";
 import { Dashboard } from "./pages/Dashboard";
 import { Projects } from "./pages/Projects";
 import { ProjectForm } from "./pages/ProjectForm";
@@ -27,6 +29,7 @@ const NAV: { key: View; icon: string; label: string }[] = [
 export function App() {
   const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || "en");
   const [authed, setAuthed] = useState<boolean>(!!auth.token);
+  const [showLogin, setShowLogin] = useState(false);
   const [view, setView] = useState<View>("dashboard");
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(
@@ -68,10 +71,23 @@ export function App() {
 
   const ctx = { lang, t, toggle };
 
+  const loginAsGuest = async () => {
+    try {
+      const r = await api.login("guest", "guest");
+      auth.token = r.token;
+      setAuthed(true);
+    } catch { setShowLogin(true); }
+  };
+
   if (!authed) {
     return (
       <LangContext.Provider value={ctx}>
-        <Login onSuccess={() => setAuthed(true)} />
+        {showLogin ? (
+          <Login onSuccess={() => setAuthed(true)} onBack={() => setShowLogin(false)}
+            onGuest={loginAsGuest} />
+        ) : (
+          <Landing onSignIn={() => setShowLogin(true)} onGuest={loginAsGuest} />
+        )}
       </LangContext.Provider>
     );
   }
@@ -81,10 +97,10 @@ export function App() {
       <div className="app">
         <aside className={"sidebar" + (menuOpen ? " open" : "")}>
           <div className="brand">
-            <span className="logo">🌾</span>
+            <LogoMark size={34} />
             <div>
-              <h1>{t("app_title")}</h1>
-              <small>{t("app_sub")}</small>
+              <h1><span style={{ color: "#8BC34A" }}>Smart</span><span style={{ color: "#4FC3F7" }}>Ponics</span></h1>
+              <small>{t("app_title")}</small>
             </div>
           </div>
           {NAV.map((n) => (

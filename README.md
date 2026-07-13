@@ -124,18 +124,19 @@ Climate can be entered three ways (spec §4):
 
 ## Authentication
 
-The app is protected by a username/password login. A default admin user is
-created on first boot:
+A branded **landing page** (SmartPonics Global Consult) introduces the platform;
+from there users **Sign In** or **Continue as Guest**. Two accounts are created
+on first boot:
 
-| | |
-|--|--|
-| Username | `admin` |
-| Password | `admin123` |
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `admin` | `admin123` |
+| Guest | `guest` | `guest` |
 
-**Change these in production** via environment variables `ADMIN_USERNAME` and
-`ADMIN_PASSWORD` (applied when the database is first seeded), and set a stable
-`SECRET_KEY` so login tokens survive restarts. Change the password after login
-via the API `POST /api/auth/change-password`.
+**Change these in production** via environment variables `ADMIN_USERNAME`,
+`ADMIN_PASSWORD`, `GUEST_USERNAME`, `GUEST_PASSWORD` (applied when the database
+is first seeded), and set a stable `SECRET_KEY` so login tokens survive
+restarts. Change a password after login via `POST /api/auth/change-password`.
 
 ## Weather data — multi-source aggregation
 
