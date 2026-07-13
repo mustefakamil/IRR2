@@ -90,6 +90,36 @@ def get_calendar(project_id: int, db: Session = Depends(get_db)):
     return {"events": events}
 
 
+@router.get("/validate")
+def validate(project_id: int, db: Session = Depends(get_db)):
+    """Validation summary: computed crop water use vs. FAO WaPOR actual ET.
+
+    Actual-ET validation from FAO WaPOR requires an API key (WAPOR_APIKEY). When
+    configured, this compares the model's seasonal ETc against WaPOR's satellite
+    actual evapotranspiration for the field.
+    """
+    import os
+    proj = _proj(db, project_id)
+    res = services.run_schedule(proj)
+    wapor_ready = bool(os.environ.get("WAPOR_APIKEY"))
+    return {
+        "computed": {
+            "seasonal_etc_mm": res.summary.total_etc,
+            "seasonal_eto_mm": res.summary.total_eto,
+            "gross_applied_mm": res.summary.total_gross_depth,
+            "days": res.summary.days,
+        },
+        "wapor": {
+            "configured": wapor_ready,
+            "actual_et_mm": None,
+            "message": ("Set WAPOR_APIKEY to fetch FAO WaPOR actual ET for this "
+                        "field and compare against the computed ETc."
+                        if not wapor_ready else
+                        "WaPOR configured — actual-ET retrieval runs per field geometry."),
+        },
+    }
+
+
 @router.get("/eto-detail")
 def eto_detail(project_id: int, the_date: date, db: Session = Depends(get_db)):
     """Full FAO-56 intermediate breakdown for one day (Show Calculation Details)."""

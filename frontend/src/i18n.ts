@@ -98,6 +98,16 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   auto_season: { en: "Leave dates empty to use the crop's growing season.", ar: "اترك التواريخ فارغة لاستخدام موسم نمو المحصول." },
   download_pdf: { en: "Download PDF Report", ar: "تحميل تقرير PDF" },
   change_password: { en: "Change Password", ar: "تغيير كلمة المرور" },
+  multi_source: { en: "Multi-Source Auto-Merge", ar: "الدمج التلقائي متعدد المصادر" },
+  merge_all: { en: "Fetch & Merge All Sources", ar: "جلب ودمج كل المصادر" },
+  data_sources: { en: "Climate Data Sources", ar: "مصادر البيانات المناخية" },
+  available: { en: "Available", ar: "متاح" },
+  needs_key: { en: "Needs key", ar: "يحتاج مفتاح" },
+  merge_desc: { en: "Automatically collects from all available APIs, runs quality control, and merges by reliability-weighted averaging.", ar: "يجمع تلقائياً من كل المصادر المتاحة، يطبّق ضبط الجودة، ويدمج بالمتوسط المرجّح حسب الموثوقية." },
+  merge_report: { en: "Merge Report", ar: "تقرير الدمج" },
+  sources_used: { en: "Sources", ar: "المصادر" },
+  agreement: { en: "avg sources / spread", ar: "متوسط المصادر / التباعد" },
+  or_single: { en: "Or fetch from a single source:", ar: "أو الجلب من مصدر واحد:" },
 };
 
 export function makeT(lang: Lang) {

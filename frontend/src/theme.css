@@ -191,3 +191,14 @@ td.clickable { cursor: pointer; color: var(--sky); text-decoration: underline do
 .login-hint { text-align: center; color: var(--muted); font-size: 12px; margin: 14px 0 0; }
 .userbox { display: flex; align-items: center; gap: 8px; color: #cfe6d5; font-size: 12.5px;
   padding: 6px 8px; }
+
+/* Multi-source climate */
+.src-chip { display: inline-flex; align-items: center; gap: 7px; padding: 6px 11px;
+  border: 1px solid var(--line); border-radius: 999px; font-size: 12.5px; background: #fff; }
+.src-chip em { color: var(--muted); font-style: normal; font-size: 10.5px;
+  background: var(--green-50); padding: 1px 6px; border-radius: 6px; }
+.src-dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+.src-dot.on { background: var(--green-500); box-shadow: 0 0 0 3px rgba(67,160,71,.18); }
+.src-dot.off { background: #c2c9c4; }
+.merge-report { margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 14px; }
+.merge-report h4 { margin: 0 0 10px; color: var(--green-800); font-size: 14px; }

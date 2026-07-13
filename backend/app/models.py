@@ -136,5 +136,6 @@ class ClimateData(Base):
     rh_mean: Mapped[float | None] = mapped_column(Float, nullable=True)
     solar_rad: Mapped[float | None] = mapped_column(Float, nullable=True)
     sunshine_hours: Mapped[float | None] = mapped_column(Float, nullable=True)
+    source: Mapped[str | None] = mapped_column(String, nullable=True)
 
     project: Mapped["Project"] = relationship(back_populates="climate")

@@ -135,13 +135,25 @@ export const api = {
     if (!res.ok) throw new Error((await res.json()).detail ?? res.statusText);
     return res.json();
   },
-  fetchWeather: (id: number, source: "nasa" | "open-meteo", start?: string, end?: string) => {
+  fetchWeather: (id: number, source: string, start?: string, end?: string) => {
     const q = new URLSearchParams({ source });
     if (start) q.set("start", start);
     if (end) q.set("end", end);
     return req<{ inserted: number; source: string; start: string; end: string }>(
       `/api/projects/${id}/climate/fetch?${q.toString()}`, { method: "POST" });
   },
+  climateSources: (id: number) =>
+    req<{ providers: any[]; available_drivers: number; merge_possible: boolean }>(
+      `/api/projects/${id}/climate/sources`),
+  fetchMerged: (id: number, start?: string, end?: string, sources?: string[]) => {
+    const q = new URLSearchParams();
+    if (start) q.set("start", start);
+    if (end) q.set("end", end);
+    if (sources && sources.length) q.set("sources", sources.join(","));
+    return req<{ inserted: number; start: string; end: string; merged_source: string; report: any }>(
+      `/api/projects/${id}/climate/fetch-merged?${q.toString()}`, { method: "POST" });
+  },
+  validate: (id: number) => req<any>(`/api/projects/${id}/validate`),
   dashboard: (id: number) => req<any>(`/api/projects/${id}/dashboard`),
   schedule: (id: number) =>
     req<{ daily: DailyRow[]; summary: Summary }>(`/api/projects/${id}/schedule`),

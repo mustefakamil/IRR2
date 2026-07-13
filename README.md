@@ -137,20 +137,41 @@ created on first boot:
 `SECRET_KEY` so login tokens survive restarts. Change the password after login
 via the API `POST /api/auth/change-password`.
 
-## Weather data (NASA POWER & Open-Meteo)
+## Weather data — multi-source aggregation
 
-On the **Climate Data** page you can auto-fill a project's daily climate from:
+The **Climate Data** page collects daily climate from several authoritative APIs,
+runs quality control, and **merges them into one authoritative series** by
+reliability-weighted averaging (button: *Fetch & Merge All Sources*). Individual
+sources can also be fetched on their own.
 
-* **NASA POWER** — global historical daily data (T2M, RH2M, WS2M @2 m,
-  ALLSKY_SFC_SW_DWN, precipitation). Units are read from the response and solar
-  is converted to MJ/m²/day.
-* **Open-Meteo** (ERA5 archive) — temperature, precipitation, 10 m wind
-  (converted to 2 m via FAO-56 Eq. 47), shortwave radiation (MJ/m²), and hourly
-  humidity aggregated to daily max/min.
+| Source | Role | Auth | Notes |
+|--------|------|------|-------|
+| **NASA POWER** | driver (#1) | none | Global satellite/MERRA-2 daily data |
+| **Copernicus ERA5** | driver (#2) | none | ERA5 reanalysis via the Open-Meteo archive |
+| **NOAA CDO (GHCND)** | driver (#3) | `NOAA_TOKEN` | Station Tmax/Tmin/precip |
+| **Open-Meteo** | driver (#4) | none | Operational model, recent past + forecast |
+| **FAO WaPOR** | validation | `WAPOR_APIKEY` | Actual ET, compared vs. computed ETc |
 
-Coordinates come from the selected **city** (a built-in database of ~95 Saudi
-cities across all 13 regions, each with latitude/longitude/elevation). Leave the
-date range empty to fetch the crop's whole growing season automatically.
+**Merge engine** (`app/weather/`):
+* HTTP helper with **retries + exponential backoff** on 429/5xx/timeouts.
+* **Availability gating** — key-less sources are always on; NOAA/WaPOR light up
+  when their env token is set. A source that errors (e.g. out of date range) is
+  recorded and **skipped** — the merge proceeds with the rest.
+* **Quality control** — each value is range-checked; with ≥3 sources, outliers
+  beyond the median tolerance are rejected.
+* **Weighted merge** — surviving values are averaged by provider reliability, and
+  the result carries **provenance** (which sources contributed, and their spread).
+
+Wind is normalised to 2 m (FAO-56 Eq. 47), NASA solar units are auto-detected and
+converted to MJ/m²/day, and humidity is reconciled across sources. Coordinates
+come from the selected **city** (~95 Saudi cities, all 13 regions). Leave the date
+range empty to fetch the crop's whole growing season.
+
+### Endpoints
+* `GET  /api/projects/{id}/climate/sources` — provider availability
+* `POST /api/projects/{id}/climate/fetch-merged` — fetch all, QC, merge, store
+* `POST /api/projects/{id}/climate/fetch?source=nasa|era5|open-meteo` — single source
+* `GET  /api/projects/{id}/validate` — computed ETc vs. WaPOR actual ET
 
 ## Reports
 

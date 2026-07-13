@@ -93,28 +93,74 @@ def fetch_weather(project_id: int, source: str = "nasa",
                                  "or date range.")
 
     try:
-        rows = weather.PROVIDERS[source](proj.latitude, proj.longitude, start, end)
+        rows = weather.fetch_single(source, proj.latitude, proj.longitude, start, end)
     except Exception as e:  # network / provider errors
         raise HTTPException(502, f"{source} request failed: {e}")
 
     if not rows:
         raise HTTPException(502, f"{source} returned no usable data for this location/range.")
 
+    inserted = _store_rows(db, project_id, rows, source, replace)
+    db.commit()
+    return {"inserted": inserted, "source": source,
+            "start": start.isoformat(), "end": end.isoformat()}
+
+
+def _store_rows(db, project_id, rows, source, replace) -> int:
     if replace:
         db.query(models.ClimateData).filter_by(project_id=project_id).delete()
-    inserted = 0
+    n = 0
     for r in rows:
         the_date = date.fromisoformat(r["date"])
         db.add(models.ClimateData(
             project_id=project_id, the_date=the_date, julian_day=_julian(the_date),
-            tmax=r["tmax"], tmin=r["tmin"], wind_speed=r["wind"] or 2.0,
-            rainfall=r["rainfall"] or 0.0, rh_max=r["rh_max"], rh_min=r["rh_min"],
-            rh_mean=r["rh_mean"], solar_rad=r["rs"],
+            tmax=r["tmax"], tmin=r["tmin"], wind_speed=r.get("wind") or 2.0,
+            rainfall=r.get("rainfall") or 0.0, rh_max=r.get("rh_max"),
+            rh_min=r.get("rh_min"), rh_mean=r.get("rh_mean"), solar_rad=r.get("rs"),
+            source=source,
         ))
-        inserted += 1
+        n += 1
+    return n
+
+
+@router.get("/sources", response_model=dict)
+def climate_sources(project_id: int, db: Session = Depends(get_db)):
+    _proj(db, project_id)
+    provs = weather.list_providers()
+    n_avail = sum(1 for p in provs if p["available"] and p["role"] == "driver")
+    return {"providers": provs, "available_drivers": n_avail,
+            "merge_possible": n_avail >= 1}
+
+
+@router.post("/fetch-merged", response_model=dict)
+def fetch_merged(project_id: int, start: date | None = None, end: date | None = None,
+                 sources: str | None = None, db: Session = Depends(get_db)):
+    """Fetch from all available sources, run QC + weighted merge, then store."""
+    proj = _proj(db, project_id)
+    if not start:
+        start = proj.planting_date
+    if not end:
+        season = (proj.crop.l_ini + proj.crop.l_dev + proj.crop.l_mid + proj.crop.l_late)
+        end = start + timedelta(days=season - 1)
+    yesterday = date.today() - timedelta(days=2)
+    if end > yesterday:
+        end = yesterday
+    if start > end:
+        raise HTTPException(400, "Requested start date is in the future; providers "
+                                 "only supply historical data.")
+
+    selected = [s.strip() for s in sources.split(",")] if sources else None
+    try:
+        result = weather.fetch_and_merge(proj.latitude, proj.longitude, start, end, selected)
+    except Exception as e:
+        raise HTTPException(502, str(e))
+
+    used = [s["key"] for s in result["report"]["sources"] if s["status"] == "ok"]
+    label = "merged(" + ",".join(used) + ")"
+    inserted = _store_rows(db, project_id, result["merged"], label, replace=True)
     db.commit()
-    return {"inserted": inserted, "source": source,
-            "start": start.isoformat(), "end": end.isoformat()}
+    return {"inserted": inserted, "start": start.isoformat(), "end": end.isoformat(),
+            "merged_source": label, "report": result["report"]}
 
 
 # --- CSV / Excel upload -----------------------------------------------------
