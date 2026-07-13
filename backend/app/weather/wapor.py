@@ -123,13 +123,13 @@ def actual_et(lat: float, lon: float, start: date, end: date,
         mm_day = results.get(code)
         window_days = (min(de, end) - max(ds, start)).days + 1
         if mm_day is None:
-            series.append({"dekad": code, "start": ds.isoformat(),
+            series.append({"dekad": code, "start": ds.isoformat(), "end": de.isoformat(),
                            "days": window_days, "mm_day": None, "mm": None})
             continue
         mm = round(mm_day * window_days, 2)
         total += mm
         found += 1
-        series.append({"dekad": code, "start": ds.isoformat(),
+        series.append({"dekad": code, "start": ds.isoformat(), "end": de.isoformat(),
                        "days": window_days, "mm_day": round(mm_day, 2), "mm": mm})
 
     return {

@@ -130,7 +130,15 @@ def validate(project_id: int, level: str = "L2", db: Session = Depends(get_db)):
             lvl = level if level in wapor_client.LEVELS else "L2"
             aeti = wapor_client.actual_et(proj.latitude, proj.longitude,
                                           span_start, span_end, level=lvl)
-            etc_window = computed["seasonal_etc_mm"]
+            # Align computed ETc to the same dekad windows for the comparison chart
+            etc_by_date = {d.the_date: d.etc for d in res.daily}
+            etc_window_sum = 0.0
+            for item in aeti["series"]:
+                s, e = item["start"], item["end"]
+                etc_mm = round(sum(v for dt, v in etc_by_date.items() if s <= dt <= e), 2)
+                item["etc_mm"] = etc_mm
+                etc_window_sum += etc_mm
+            etc_window = round(etc_window_sum, 2)
             ratio = round(aeti["total_mm"] / etc_window, 3) if etc_window else None
             wapor_result.update({
                 "actual_et_mm": aeti["total_mm"],

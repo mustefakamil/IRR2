@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, Project, Summary } from "../api";
 import { useLang } from "../i18n";
+import { EtcAetiBars, EtcAetiCumulative } from "../components/Charts";
 
 export function Reports({ project }: { project: Project | null }) {
   const { t, lang } = useLang();
@@ -139,6 +140,14 @@ export function Reports({ project }: { project: Project | null }) {
                 </div>
               )}
             </div>
+            {val.wapor.series && val.wapor.series.length > 0 && (
+              <div className="grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))", marginTop: 16 }}>
+                <div className="card chart-card"><h3>📊 {t("per_dekad")}</h3>
+                  <EtcAetiBars series={val.wapor.series} /></div>
+                <div className="card chart-card"><h3>📈 {t("cumulative")}</h3>
+                  <EtcAetiCumulative series={val.wapor.series} /></div>
+              </div>
+            )}
             {val.wapor.note && (
               <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 10 }}>ℹ️ {val.wapor.note}</p>
             )}

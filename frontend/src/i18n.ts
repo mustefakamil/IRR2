@@ -115,7 +115,9 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   wapor_aeti: { en: "WaPOR Actual ET (satellite)", ar: "ET الفعلي WaPOR (قمر صناعي)" },
   aeti_ratio: { en: "AETI / ETc ratio", ar: "نسبة AETI / ETc" },
   coverage: { en: "Coverage", ar: "التغطية" },
-  validation_desc: { en: "Compares the model's crop water demand with FAO WaPOR satellite-observed actual evapotranspiration (300 m, open data).", ar: "يقارن الطلب المائي للمحصول من النموذج مع البخر-نتح الفعلي المرصود من قمر WaPOR (٣٠٠م، بيانات مفتوحة)." },
+  validation_desc: { en: "Compares the model's crop water demand with FAO WaPOR satellite-observed actual evapotranspiration (100 m, open data).", ar: "يقارن الطلب المائي للمحصول من النموذج مع البخر-نتح الفعلي المرصود من قمر WaPOR (١٠٠م، بيانات مفتوحة)." },
+  per_dekad: { en: "ETc vs Actual ET (per dekad)", ar: "ETc مقابل ET الفعلي (لكل عشرة أيام)" },
+  cumulative: { en: "Cumulative ETc vs Actual ET", ar: "التراكمي ETc مقابل ET الفعلي" },
 };
 
 export function makeT(lang: Lang) {

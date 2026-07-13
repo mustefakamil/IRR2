@@ -72,6 +72,51 @@ export function SwbChart({ trends }: { trends: any[] }) {
   );
 }
 
+const AETI_BLUE = "#0288d1";
+
+function dekadLabel(code: string) {
+  // "2025-10-D1" -> "10-D1"
+  return code.length > 5 ? code.slice(5) : code;
+}
+
+export function EtcAetiBars({ series }: { series: any[] }) {
+  const labels = series.map((s) => dekadLabel(s.dekad));
+  return (
+    <div className="chart-wrap">
+      <Bar
+        data={{
+          labels,
+          datasets: [
+            { label: "Computed ETc", data: series.map((s) => s.etc_mm ?? null), backgroundColor: GREEN, borderRadius: 3 },
+            { label: "WaPOR Actual ET", data: series.map((s) => s.mm ?? null), backgroundColor: AETI_BLUE, borderRadius: 3 },
+          ],
+        }}
+        options={{ ...baseOpts, scales: { ...baseOpts.scales, y: { beginAtZero: true, title: { display: true, text: "mm / dekad" } } } }}
+      />
+    </div>
+  );
+}
+
+export function EtcAetiCumulative({ series }: { series: any[] }) {
+  let ce = 0, ca = 0;
+  const cumEtc = series.map((s) => (ce += s.etc_mm ?? 0));
+  const cumAeti = series.map((s) => (ca += s.mm ?? 0));
+  return (
+    <div className="chart-wrap">
+      <Line
+        data={{
+          labels: series.map((s) => dekadLabel(s.dekad)),
+          datasets: [
+            { label: "Cumulative ETc", data: cumEtc, borderColor: GREEN, backgroundColor: "rgba(46,125,50,.12)", fill: true, tension: .25, pointRadius: 0, borderWidth: 2 },
+            { label: "Cumulative AETI", data: cumAeti, borderColor: AETI_BLUE, backgroundColor: "rgba(2,136,209,.12)", fill: true, tension: .25, pointRadius: 0, borderWidth: 2 },
+          ],
+        }}
+        options={{ ...baseOpts, scales: { ...baseOpts.scales, y: { beginAtZero: true, title: { display: true, text: "mm (cumulative)" } } } }}
+      />
+    </div>
+  );
+}
+
 export function WaterChart({ trends }: { trends: any[] }) {
   return (
     <div className="chart-wrap">
