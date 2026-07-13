@@ -3,6 +3,7 @@ import { api, auth, Project } from "./api";
 import { Lang, LangContext, makeT } from "./i18n";
 import { Login } from "./pages/Login";
 import { Landing } from "./pages/Landing";
+import { Home } from "./pages/Home";
 import { LogoMark } from "./components/Logo";
 import { Dashboard } from "./pages/Dashboard";
 import { Projects } from "./pages/Projects";
@@ -13,9 +14,10 @@ import { CalendarView } from "./pages/Calendar";
 import { Reports } from "./pages/Reports";
 import { Crops } from "./pages/Crops";
 
-type View = "dashboard" | "projects" | "new" | "climate" | "schedule" | "calendar" | "reports" | "crops";
+type View = "home" | "dashboard" | "projects" | "new" | "climate" | "schedule" | "calendar" | "reports" | "crops";
 
 const NAV: { key: View; icon: string; label: string }[] = [
+  { key: "home", icon: "🏠", label: "home_nav" },
   { key: "dashboard", icon: "📊", label: "dashboard" },
   { key: "projects", icon: "📁", label: "projects" },
   { key: "new", icon: "➕", label: "new_project" },
@@ -30,7 +32,7 @@ export function App() {
   const [lang, setLang] = useState<Lang>((localStorage.getItem("lang") as Lang) || "en");
   const [authed, setAuthed] = useState<boolean>(!!auth.token);
   const [showLogin, setShowLogin] = useState(false);
-  const [view, setView] = useState<View>("dashboard");
+  const [view, setView] = useState<View>("home");
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(
     Number(localStorage.getItem("pid")) || null
@@ -96,13 +98,14 @@ export function App() {
     <LangContext.Provider value={ctx}>
       <div className="app">
         <aside className={"sidebar" + (menuOpen ? " open" : "")}>
-          <div className="brand">
+          <button className="brand" onClick={() => go("home")} title={t("home_nav")}
+            style={{ background: "none", border: "none", cursor: "pointer", width: "100%", textAlign: "start" }}>
             <LogoMark size={34} />
             <div>
               <h1><span style={{ color: "#8BC34A" }}>Smart</span><span style={{ color: "#4FC3F7" }}>Ponics</span></h1>
               <small>{t("app_title")}</small>
             </div>
-          </div>
+          </button>
           {NAV.map((n) => (
             <button key={n.key} className={"navbtn" + (view === n.key ? " active" : "")}
               onClick={() => { if (n.key === "new") setEditId(null); go(n.key); }}>
@@ -131,6 +134,10 @@ export function App() {
           </div>
 
           <div className="content">
+            {view === "home" && (
+              <Home onDashboard={() => go("dashboard")}
+                onNew={() => { setEditId(null); go("new"); }} />
+            )}
             {view === "dashboard" && (
               <Dashboard project={full}
                 onGoNew={() => { setEditId(null); go("new"); }}

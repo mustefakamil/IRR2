@@ -6,6 +6,8 @@ export type Lang = "en" | "ar";
 export const STRINGS: Record<string, { en: string; ar: string }> = {
   app_title: { en: "Smart Irrigation Platform", ar: "منصة الري الذكية" },
   app_sub: { en: "FAO-56 Penman-Monteith Decision Support", ar: "دعم القرار وفق FAO-56 بنمان-مونتيث" },
+  home_nav: { en: "Home", ar: "الرئيسية" },
+  open_dashboard: { en: "Open Dashboard", ar: "فتح لوحة المعلومات" },
   dashboard: { en: "Dashboard", ar: "لوحة المعلومات" },
   projects: { en: "Projects", ar: "المشاريع" },
   new_project: { en: "New Project", ar: "مشروع جديد" },
