@@ -70,6 +70,10 @@ export function ProjectForm({ editId, onSaved }:
         area_value: +f.area_value, efficiency_pct: +f.efficiency_pct, ecw: +f.ecw, ece: +f.ece,
         n_emitters: +f.n_emitters, emitter_flow_lph: +f.emitter_flow_lph, deficit_fraction: +f.deficit_fraction };
       const p = editId ? await api.updateProject(editId, body) : await api.createProject(body);
+      // Provision climate for the selected city/season so the schedule is ready.
+      try { await api.autoClimate(p.id); } catch (e: any) {
+        setErr("Project saved, but climate provisioning failed: " + e.message);
+      }
       onSaved(p);
     } catch (e: any) { setErr(e.message); } finally { setSaving(false); }
   };
@@ -169,8 +173,12 @@ export function ProjectForm({ editId, onSaved }:
         <Field label={t("emitter_flow")}><input type="number" step="0.1" value={f.emitter_flow_lph} onChange={(e) => set("emitter_flow_lph", e.target.value)} /></Field>
       </div>
 
-      <div className="row" style={{ marginTop: 22 }}>
-        <button className="btn" onClick={submit} disabled={saving}>{saving ? "…" : "💾 " + t("save")}</button>
+      <div className="row" style={{ marginTop: 22, alignItems: "center" }}>
+        <button className="btn" style={{ padding: "12px 22px", fontSize: 14.5 }}
+          onClick={submit} disabled={saving}>
+          {saving ? "⏳ " + t("calculating") : "🧮 " + t("calc_schedule")}
+        </button>
+        {saving && <span style={{ color: "var(--muted)", fontSize: 12.5 }}>{t("provisioning")}</span>}
       </div>
     </div>
   );

@@ -45,6 +45,17 @@ export function Climate({ project, onChanged }: { project: Project | null; onCha
     await api.clearClimate(project.id); load(); onChanged();
   };
 
+  const autoProvision = async () => {
+    setBusy(true); setErr(null); setReport(null);
+    try {
+      const r = await api.autoClimate(project.id);
+      load(); onChanged();
+      const parts = Object.entries(r.by_source).map(([k, v]) => `${v} ${k}`).join(", ");
+      alert(`${r.inserted} days provisioned (${parts})\n${r.start} → ${r.end}`);
+    } catch (e: any) { setErr(e.message); }
+    finally { setBusy(false); }
+  };
+
   const fetchWx = async (source: string) => {
     setBusy(true); setErr(null);
     try {
@@ -82,9 +93,10 @@ export function Climate({ project, onChanged }: { project: Project | null; onCha
             <input type="date" value={start} onChange={(e) => setStart(e.target.value)} /></div>
           <div className="field"><label>{t("to_date")}</label>
             <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
-          <button className="btn" disabled={busy} onClick={mergeAll}>🔀 {t("merge_all")}</button>
+          <button className="btn" disabled={busy} onClick={autoProvision}>⚡ {t("auto_climate")}</button>
+          <button className="btn secondary" disabled={busy} onClick={mergeAll}>🔀 {t("merge_all")}</button>
         </div>
-        <p style={{ color: "var(--muted)", fontSize: 12, margin: "6px 0 0" }}>{t("auto_season")}</p>
+        <p style={{ color: "var(--muted)", fontSize: 12, margin: "6px 0 0" }}>{t("auto_hint")}</p>
 
         <div className="row" style={{ gap: 8, marginTop: 8, alignItems: "center" }}>
           <span style={{ color: "var(--muted)", fontSize: 12.5 }}>{t("or_single")}</span>

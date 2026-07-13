@@ -76,21 +76,24 @@ def fetch_weather(project_id: int, source: str = "nasa",
     so it never requests future dates (providers only have historical data).
     """
     proj = _proj(db, project_id)
-    if source not in weather.PROVIDERS:
-        raise HTTPException(400, f"Unknown source '{source}'. Use: {list(weather.PROVIDERS)}")
+    allowed = list(weather.PROVIDERS) + ["normals"]
+    if source not in allowed:
+        raise HTTPException(400, f"Unknown source '{source}'. Use: {allowed}")
 
     if not start:
         start = proj.planting_date
     if not end:
         season = (proj.crop.l_ini + proj.crop.l_dev + proj.crop.l_mid + proj.crop.l_late)
         end = start + timedelta(days=season - 1)
-    yesterday = date.today() - timedelta(days=2)
-    if end > yesterday:
-        end = yesterday
-    if start > end:
-        raise HTTPException(400, "Requested start date is in the future; providers "
-                                 "only supply historical data. Adjust the planting date "
-                                 "or date range.")
+    # Climate normals work for future dates; observational sources do not.
+    if source != "normals":
+        yesterday = date.today() - timedelta(days=2)
+        if end > yesterday:
+            end = yesterday
+        if start > end:
+            raise HTTPException(400, "Requested start date is in the future; observational "
+                                     "sources only supply historical data. Use 'Auto' or "
+                                     "'Climate Normals' for future seasons.")
 
     try:
         rows = weather.fetch_single(source, proj.latitude, proj.longitude, start, end)
@@ -117,10 +120,36 @@ def _store_rows(db, project_id, rows, source, replace) -> int:
             tmax=r["tmax"], tmin=r["tmin"], wind_speed=r.get("wind") or 2.0,
             rainfall=r.get("rainfall") or 0.0, rh_max=r.get("rh_max"),
             rh_min=r.get("rh_min"), rh_mean=r.get("rh_mean"), solar_rad=r.get("rs"),
-            source=source,
+            source=r.get("source") or source,
         ))
         n += 1
     return n
+
+
+@router.post("/auto", response_model=dict)
+def auto_provision(project_id: int, start: date | None = None, end: date | None = None,
+                   db: Session = Depends(get_db)):
+    """Guarantee climate for the whole growing season (never fails).
+
+    Combines observed history (NASA), near-term forecast (Open-Meteo) and
+    long-term climate normals (CLIMWAT-style) so a schedule is always available —
+    even for a future planting date.
+    """
+    proj = _proj(db, project_id)
+    if not start:
+        start = proj.planting_date
+    if not end:
+        season = (proj.crop.l_ini + proj.crop.l_dev + proj.crop.l_mid + proj.crop.l_late)
+        end = start + timedelta(days=season - 1)
+    try:
+        result = weather.provision_season(proj.latitude, proj.longitude, start, end)
+    except Exception as e:
+        raise HTTPException(502, f"Climate provisioning failed: {e}")
+    if not result["records"]:
+        raise HTTPException(502, "No climate could be provisioned for this location.")
+    inserted = _store_rows(db, project_id, result["records"], "auto", replace=True)
+    db.commit()
+    return {"inserted": inserted, **result["report"]}
 
 
 @router.get("/sources", response_model=dict)

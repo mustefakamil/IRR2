@@ -150,8 +150,17 @@ sources can also be fetched on their own.
 | **NASA POWER** | driver (#1) | none | Global satellite/MERRA-2 daily data |
 | **Copernicus ERA5** | driver (#2) | none | ERA5 reanalysis via the Open-Meteo archive |
 | **NOAA CDO (GHCND)** | driver (#3) | `NOAA_TOKEN` | Station Tmax/Tmin/precip |
-| **Open-Meteo** | driver (#4) | none | Operational model, recent past + forecast |
-| **FAO WaPOR** | validation | none | Satellite **actual ET** (L1-AETI-D, 300 m), compared vs. computed ETc |
+| **Open-Meteo** | driver (#4) | none | Operational model, recent past + **forecast** |
+| **Climate Normals** | normals (#5) | none | NASA climatology monthly means — the **CLIMWAT/CROPWAT equivalent**; works for any date incl. future seasons |
+| **FAO WaPOR** | validation | none | Satellite **actual ET** (L1/L2-AETI-D), compared vs. computed ETc |
+
+**Auto-provisioning** — creating a project runs **Calculate Irrigation Schedule**,
+which guarantees climate for the whole season so a schedule is *always* produced
+(no "no climate data" errors), even for a **future planting date**. It hybridises:
+observed history (NASA) on past days, **forecast** (Open-Meteo) on the coming
+~2 weeks, and **climate normals** (CLIMWAT-style) elsewhere. Endpoint:
+`POST /api/projects/{id}/climate/auto`; also on the Climate page's *Auto Climate*
+button.
 
 **Merge engine** (`app/weather/`):
 * HTTP helper with **retries + exponential backoff** on 429/5xx/timeouts.

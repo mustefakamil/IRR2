@@ -179,6 +179,21 @@ class NoaaCdo(WeatherProvider):
         return out
 
 
+# --- Climate normals (NASA climatology; CLIMWAT-style monthly means) --------
+class ClimateNormals(WeatherProvider):
+    key = "normals"
+    label = "Climate Normals (CLIMWAT-style)"
+    role = "normals"
+    priority = 5
+    weight = 0.6
+    note = ("Long-term monthly climate normals (NASA POWER climatology), the "
+            "CLIMWAT/CROPWAT equivalent. Works for any date incl. future seasons.")
+
+    def fetch(self, lat, lon, start: date, end: date) -> list[dict]:
+        from .provision import climate_normals, _expand_normals
+        return list(_expand_normals(climate_normals(lat, lon), start, end).values())
+
+
 # --- FAO WaPOR (actual-ET validation; public, no key) -----------------------
 class Wapor(WeatherProvider):
     key = "wapor"

@@ -142,6 +142,9 @@ export const api = {
     return req<{ inserted: number; source: string; start: string; end: string }>(
       `/api/projects/${id}/climate/fetch?${q.toString()}`, { method: "POST" });
   },
+  autoClimate: (id: number) =>
+    req<{ inserted: number; by_source: Record<string, number>; total_days: number; start: string; end: string }>(
+      `/api/projects/${id}/climate/auto`, { method: "POST" }),
   climateSources: (id: number) =>
     req<{ providers: any[]; available_drivers: number; merge_possible: boolean }>(
       `/api/projects/${id}/climate/sources`),

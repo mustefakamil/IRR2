@@ -140,6 +140,11 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   s_cities: { en: "Saudi Cities", ar: "مدينة سعودية" },
   s_apis: { en: "Climate APIs", ar: "مصادر مناخية" },
   s_method: { en: "Methodology", ar: "المنهجية" },
+  calc_schedule: { en: "Calculate Irrigation Schedule", ar: "احسب جدولة الري" },
+  calculating: { en: "Calculating…", ar: "جارٍ الحساب…" },
+  provisioning: { en: "Fetching climate & computing the schedule…", ar: "جلب المناخ وحساب الجدولة…" },
+  auto_climate: { en: "Auto Climate", ar: "المناخ التلقائي" },
+  auto_hint: { en: "Auto combines observed data (past), forecast (near-term) and climate normals (CLIMWAT-style) so any season — even future — always has climate.", ar: "التلقائي يجمع البيانات المرصودة (الماضي) والتوقعات (القريبة) والمعدلات المناخية (نمط CLIMWAT) لضمان توفّر المناخ لأي موسم حتى المستقبلي." },
 };
 
 export function makeT(lang: Lang) {

@@ -8,12 +8,13 @@ from __future__ import annotations
 from datetime import date
 
 from .base import WeatherProvider, PARAMS
-from .providers import NasaPower, Era5, OpenMeteo, NoaaCdo, Wapor
+from .providers import NasaPower, Era5, OpenMeteo, NoaaCdo, Wapor, ClimateNormals
 from .merge import merge_records, summarise
+from .provision import provision_season, climate_normals
 
 # Registry (order = preference). Validation-role providers are excluded from merge.
 REGISTRY: list[WeatherProvider] = [
-    NasaPower(), Era5(), NoaaCdo(), OpenMeteo(), Wapor(),
+    NasaPower(), Era5(), NoaaCdo(), OpenMeteo(), ClimateNormals(), Wapor(),
 ]
 _BY_KEY = {p.key: p for p in REGISTRY}
 
