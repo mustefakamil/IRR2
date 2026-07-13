@@ -91,12 +91,14 @@ def get_calendar(project_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/validate")
-def validate(project_id: int, db: Session = Depends(get_db)):
+def validate(project_id: int, level: str = "L2", db: Session = Depends(get_db)):
     """Compare computed crop ET (ETc) against FAO WaPOR satellite actual ET.
 
     ETc is the modelled well-watered crop demand; WaPOR AETI is the observed
-    actual evapotranspiration for the 300 m pixel over the field. Their ratio
-    (AETI/ETc) indicates how closely real conditions met the crop demand.
+    actual evapotranspiration over the field. `level` selects the WaPOR
+    resolution: L2 (100 m, finest available here) or L1 (300 m), with automatic
+    fallback. Their ratio (AETI/ETc) indicates how closely real conditions met
+    the crop demand.
     """
     from datetime import date, timedelta
     from ..weather import wapor as wapor_client
@@ -125,21 +127,23 @@ def validate(project_id: int, db: Session = Depends(get_db)):
                                     "actual ET is only available for past dates.")
     else:
         try:
+            lvl = level if level in wapor_client.LEVELS else "L2"
             aeti = wapor_client.actual_et(proj.latitude, proj.longitude,
-                                          span_start, span_end)
+                                          span_start, span_end, level=lvl)
             etc_window = computed["seasonal_etc_mm"]
             ratio = round(aeti["total_mm"] / etc_window, 3) if etc_window else None
             wapor_result.update({
                 "actual_et_mm": aeti["total_mm"],
                 "dekads_found": aeti["dekads_found"],
                 "dekads_expected": aeti["dekads_expected"],
+                "level": aeti["level"],
                 "resolution": aeti["resolution"],
                 "window": {"start": span_start.isoformat(), "end": span_end.isoformat()},
                 "ratio_aeti_over_etc": ratio,
                 "series": aeti["series"],
-                "note": ("AETI is the actual ET of the whole 300 m pixel (may include "
-                         "non-irrigated surroundings); use WaPOR L3 (30 m) where "
-                         "available for field-scale validation."),
+                "note": ("AETI is the actual ET of the WaPOR pixel; the finer L2 "
+                         "(100 m) is used where available, else L1 (300 m). The "
+                         "pixel may still include non-irrigated surroundings."),
             })
         except Exception as e:
             wapor_result["message"] = f"WaPOR fetch failed: {e}"

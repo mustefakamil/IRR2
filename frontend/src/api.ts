@@ -153,7 +153,8 @@ export const api = {
     return req<{ inserted: number; start: string; end: string; merged_source: string; report: any }>(
       `/api/projects/${id}/climate/fetch-merged?${q.toString()}`, { method: "POST" });
   },
-  validate: (id: number) => req<any>(`/api/projects/${id}/validate`),
+  validate: (id: number, level: string = "L2") =>
+    req<any>(`/api/projects/${id}/validate?level=${level}`),
   dashboard: (id: number) => req<any>(`/api/projects/${id}/dashboard`),
   schedule: (id: number) =>
     req<{ daily: DailyRow[]; summary: Summary }>(`/api/projects/${id}/schedule`),

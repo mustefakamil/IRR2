@@ -21,10 +21,19 @@ os.environ.setdefault("GDAL_HTTP_TIMEOUT", "30")
 os.environ.setdefault("VSI_CACHE", "TRUE")
 
 _COG = ("/vsicurl/https://storage.googleapis.com/fao-gismgr-wapor-3-data/DATA/"
-        "WAPOR-3/MAPSET/L1-AETI-D/WAPOR-3.L1-AETI-D.{code}.tif")
+        "WAPOR-3/MAPSET/{mapset}/WAPOR-3.{mapset}.{code}.tif")
 _SCALE = 0.1          # Int16 raw * scale = mm/day
 _NODATA = -9999
 _MAX_DEKADS = 40      # safety cap (~13 months)
+
+# WaPOR v3 actual-ET (AETI) dekadal levels available via the open API.
+# L3 (20 m) is only published for a few specific irrigation schemes and is not
+# available for this region, so L1/L2 are offered (L2 = finest here).
+LEVELS = {
+    "L2": {"mapset": "L2-AETI-D", "resolution": "L2 (100 m)"},
+    "L1": {"mapset": "L1-AETI-D", "resolution": "L1 (300 m)"},
+}
+DEFAULT_LEVEL = "L2"
 
 
 def is_ready() -> bool:
@@ -51,11 +60,11 @@ def _dekads_in_range(start: date, end: date):
             month, year = 1, year + 1
 
 
-def _read_pixel(code: str, lat: float, lon: float):
+def _read_pixel(code: str, lat: float, lon: float, mapset: str = "L1-AETI-D"):
     """Return AETI mm/day for one dekad at a point, or None if missing/nodata."""
     import rasterio
     from rasterio.windows import Window
-    url = _COG.format(code=code)
+    url = _COG.format(mapset=mapset, code=code)
     try:
         with rasterio.open(url) as ds:
             row, col = ds.index(lon, lat)
@@ -70,12 +79,24 @@ def _read_pixel(code: str, lat: float, lon: float):
         return None  # raster not published yet, network hiccup, etc.
 
 
+def _read_series(lat, lon, dekads, mapset, max_workers):
+    results: dict[str, float | None] = {}
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futs = {pool.submit(_read_pixel, code, lat, lon, mapset): code
+                for code, ds, de in dekads}
+        for fut in as_completed(futs):
+            results[futs[fut]] = fut.result()
+    return results
+
+
 def actual_et(lat: float, lon: float, start: date, end: date,
-              max_workers: int = 6) -> dict:
+              level: str = DEFAULT_LEVEL, max_workers: int = 6) -> dict:
     """Seasonal actual ET (AETI) at a point over [start, end].
 
-    Returns total_mm, a per-dekad series, and coverage (dekads found / expected).
-    Each dekad's contribution = mm/day * (days of the dekad inside the window).
+    `level` is "L2" (100 m, finest here) or "L1" (300 m). If the requested level
+    has no valid pixel at the point (e.g. outside its coverage), it falls back to
+    the coarser level automatically. Returns total_mm, per-dekad series, coverage
+    and the level/resolution actually used.
     """
     if not is_ready():
         raise RuntimeError("rasterio/GDAL not installed — WaPOR reads unavailable")
@@ -84,13 +105,16 @@ def actual_et(lat: float, lon: float, start: date, end: date,
     if not dekads:
         raise ValueError("Empty date range")
 
+    order = [level] + [lv for lv in ("L2", "L1") if lv != level]
+    used_level = level
     results: dict[str, float | None] = {}
-    with ThreadPoolExecutor(max_workers=max_workers) as pool:
-        futs = {pool.submit(_read_pixel, code, lat, lon): (code, ds, de)
-                for code, ds, de in dekads}
-        for fut in as_completed(futs):
-            code, _, _ = futs[fut]
-            results[code] = fut.result()
+    for lv in order:
+        if lv not in LEVELS:
+            continue
+        results = _read_series(lat, lon, dekads, LEVELS[lv]["mapset"], max_workers)
+        used_level = lv
+        if any(v is not None for v in results.values()):
+            break  # this level has data at the point
 
     series = []
     total = 0.0
@@ -113,5 +137,6 @@ def actual_et(lat: float, lon: float, start: date, end: date,
         "dekads_found": found,
         "dekads_expected": len(dekads),
         "series": series,
-        "resolution": "L1 (300 m) global, mm/day dekadal",
+        "level": used_level,
+        "resolution": LEVELS[used_level]["resolution"] + " dekadal AETI",
     }

@@ -171,13 +171,17 @@ range empty to fetch the crop's whole growing season.
 
 The **Reports** page can validate the model against **FAO WaPOR** satellite
 actual evapotranspiration (open data, no key). For the growing-season window it
-reads the public `L1-AETI-D` dekadal **Cloud-Optimized GeoTIFFs** (global, 300 m)
-directly from Google Cloud Storage via GDAL `/vsicurl/` **windowed reads** — only
-the bytes for the field's single pixel are fetched (not the global raster),
-several dekads in parallel. It reports computed **ETc** vs. observed **AETI** and
-their ratio. Needs `rasterio` (bundled GDAL); if unavailable the feature reports
-so gracefully. Note: the 300 m pixel may include non-irrigated surroundings —
-use WaPOR L3 (30 m) where available for field-scale checks.
+reads the public WaPOR v3 `AETI-D` dekadal **Cloud-Optimized GeoTIFFs** directly
+from Google Cloud Storage via GDAL `/vsicurl/` **windowed reads** — only the
+bytes for the field's single pixel are fetched (not the global raster), several
+dekads in parallel. It reports computed **ETc** vs. observed **AETI** and their
+ratio.
+
+**Resolution levels** (selectable in the UI): **L2 — 100 m** (default, finest
+available for this region) with automatic fallback to **L1 — 300 m**. WaPOR L3
+(20 m) is only published for a few specific irrigation schemes and is not
+available for Saudi Arabia via the API, so L2 is the field-scale option here.
+Needs `rasterio` (bundled GDAL); if unavailable the feature reports so gracefully.
 
 ### Endpoints
 * `GET  /api/projects/{id}/climate/sources` — provider availability

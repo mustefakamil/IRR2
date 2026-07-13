@@ -8,6 +8,7 @@ export function Reports({ project }: { project: Project | null }) {
   const [err, setErr] = useState<string | null>(null);
   const [val, setVal] = useState<any>(null);
   const [validating, setValidating] = useState(false);
+  const [level, setLevel] = useState("L2");
 
   useEffect(() => {
     if (!project) { setSummary(null); return; }
@@ -18,7 +19,7 @@ export function Reports({ project }: { project: Project | null }) {
   const runValidation = async () => {
     if (!project) return;
     setValidating(true); setErr(null); setVal(null);
-    try { setVal(await api.validate(project.id)); }
+    try { setVal(await api.validate(project.id, level)); }
     catch (e: any) { setErr(e.message); }
     finally { setValidating(false); }
   };
@@ -104,9 +105,16 @@ export function Reports({ project }: { project: Project | null }) {
       <div className="card" style={{ marginTop: 16 }}>
         <div className="row between" style={{ marginBottom: 6 }}>
           <h3 style={{ margin: 0 }}>🛰️ {t("validation")}</h3>
-          <button className="btn" onClick={runValidation} disabled={validating}>
-            {validating ? "…" : "✔️ " + t("run_validation")}
-          </button>
+          <div className="row" style={{ gap: 8 }}>
+            <select value={level} onChange={(e) => setLevel(e.target.value)}
+              style={{ padding: "9px 11px", borderRadius: 8, border: "1px solid var(--line)" }}>
+              <option value="L2">WaPOR L2 — 100 m</option>
+              <option value="L1">WaPOR L1 — 300 m</option>
+            </select>
+            <button className="btn" onClick={runValidation} disabled={validating}>
+              {validating ? "…" : "✔️ " + t("run_validation")}
+            </button>
+          </div>
         </div>
         <p style={{ color: "var(--muted)", fontSize: 12.5, marginTop: 0 }}>{t("validation_desc")}</p>
         {validating && <p style={{ color: "var(--muted)", fontSize: 13 }}>{t("validating")}</p>}
