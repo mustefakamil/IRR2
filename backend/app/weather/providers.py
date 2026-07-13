@@ -179,19 +179,20 @@ class NoaaCdo(WeatherProvider):
         return out
 
 
-# --- FAO WaPOR (validation of actual ET; requires an API key) ---------------
+# --- FAO WaPOR (actual-ET validation; public, no key) -----------------------
 class Wapor(WeatherProvider):
     key = "wapor"
     label = "FAO WaPOR (validation)"
     role = "validation"
     priority = 9
-    requires_auth = True
-    note = ("Remote-sensing actual ET for validation, not scheduling. "
-            "Set WAPOR_APIKEY to enable.")
+    requires_auth = False
+    note = ("Satellite actual ET (L1-AETI-D, 300 m). Open access. "
+            "Used to validate computed ETc, not for scheduling.")
 
     def is_available(self) -> bool:
-        return bool(os.environ.get("WAPOR_APIKEY"))
+        from . import wapor
+        return wapor.is_ready()
 
     def fetch(self, lat, lon, start: date, end: date) -> list[dict]:
         raise ValueError("WaPOR provides actual ET for validation, not daily "
-                         "weather; use the validation endpoint instead.")
+                         "weather; use the /validate endpoint instead.")

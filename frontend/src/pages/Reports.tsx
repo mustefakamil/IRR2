@@ -6,11 +6,22 @@ export function Reports({ project }: { project: Project | null }) {
   const { t, lang } = useLang();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [val, setVal] = useState<any>(null);
+  const [validating, setValidating] = useState(false);
 
   useEffect(() => {
     if (!project) { setSummary(null); return; }
+    setVal(null);
     api.schedule(project.id).then((r) => setSummary(r.summary)).catch((e) => setErr(e.message));
   }, [project?.id]);
+
+  const runValidation = async () => {
+    if (!project) return;
+    setValidating(true); setErr(null); setVal(null);
+    try { setVal(await api.validate(project.id)); }
+    catch (e: any) { setErr(e.message); }
+    finally { setValidating(false); }
+  };
 
   if (!project) return <div className="empty-state"><div className="big">📄</div><p>{t("no_project")}</p></div>;
 
@@ -88,6 +99,46 @@ export function Reports({ project }: { project: Project | null }) {
             σ=4.903×10⁻⁹). All defaults are user-editable.
           </p>
         </div>
+      </div>
+
+      <div className="card" style={{ marginTop: 16 }}>
+        <div className="row between" style={{ marginBottom: 6 }}>
+          <h3 style={{ margin: 0 }}>🛰️ {t("validation")}</h3>
+          <button className="btn" onClick={runValidation} disabled={validating}>
+            {validating ? "…" : "✔️ " + t("run_validation")}
+          </button>
+        </div>
+        <p style={{ color: "var(--muted)", fontSize: 12.5, marginTop: 0 }}>{t("validation_desc")}</p>
+        {validating && <p style={{ color: "var(--muted)", fontSize: 13 }}>{t("validating")}</p>}
+        {val && (
+          <>
+            <div className="grid cards" style={{ marginTop: 6 }}>
+              <div className="card stat"><div className="label">{t("computed_etc")}</div>
+                <div className="value" style={{ fontSize: 24 }}>{val.computed.seasonal_etc_mm}<small> mm</small></div></div>
+              {val.wapor.actual_et_mm != null ? (
+                <>
+                  <div className="card stat accent"><div className="label">{t("wapor_aeti")}</div>
+                    <div className="value" style={{ fontSize: 24 }}>{val.wapor.actual_et_mm}<small> mm</small></div></div>
+                  <div className="card stat"><div className="label">{t("aeti_ratio")}</div>
+                    <div className="value" style={{ fontSize: 24 }}>{val.wapor.ratio_aeti_over_etc}</div></div>
+                  <div className="card stat"><div className="label">{t("coverage")}</div>
+                    <div className="value" style={{ fontSize: 24 }}>{val.wapor.dekads_found}/{val.wapor.dekads_expected}<small> dekads</small></div>
+                    <div className="sub">{val.wapor.window?.start} → {val.wapor.window?.end}</div></div>
+                </>
+              ) : (
+                <div className="card" style={{ gridColumn: "span 2" }}>
+                  <div className="err">{val.wapor.message || "WaPOR unavailable"}</div>
+                </div>
+              )}
+            </div>
+            {val.wapor.note && (
+              <p style={{ color: "var(--muted)", fontSize: 12, marginTop: 10 }}>ℹ️ {val.wapor.note}</p>
+            )}
+            {val.wapor.resolution && (
+              <p style={{ color: "var(--muted)", fontSize: 11.5, marginTop: 2 }}>Source: FAO WaPOR {val.wapor.resolution}</p>
+            )}
+          </>
+        )}
       </div>
     </>
   );

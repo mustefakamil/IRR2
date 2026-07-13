@@ -108,6 +108,14 @@ export const STRINGS: Record<string, { en: string; ar: string }> = {
   sources_used: { en: "Sources", ar: "المصادر" },
   agreement: { en: "avg sources / spread", ar: "متوسط المصادر / التباعد" },
   or_single: { en: "Or fetch from a single source:", ar: "أو الجلب من مصدر واحد:" },
+  validation: { en: "Model Validation (FAO WaPOR)", ar: "التحقق من النموذج (FAO WaPOR)" },
+  run_validation: { en: "Validate vs WaPOR Actual ET", ar: "التحقق مقابل ET الفعلي WaPOR" },
+  validating: { en: "Reading WaPOR satellite data…", ar: "قراءة بيانات WaPOR الفضائية…" },
+  computed_etc: { en: "Computed ETc (model)", ar: "ETc المحسوب (النموذج)" },
+  wapor_aeti: { en: "WaPOR Actual ET (satellite)", ar: "ET الفعلي WaPOR (قمر صناعي)" },
+  aeti_ratio: { en: "AETI / ETc ratio", ar: "نسبة AETI / ETc" },
+  coverage: { en: "Coverage", ar: "التغطية" },
+  validation_desc: { en: "Compares the model's crop water demand with FAO WaPOR satellite-observed actual evapotranspiration (300 m, open data).", ar: "يقارن الطلب المائي للمحصول من النموذج مع البخر-نتح الفعلي المرصود من قمر WaPOR (٣٠٠م، بيانات مفتوحة)." },
 };
 
 export function makeT(lang: Lang) {

@@ -92,32 +92,59 @@ def get_calendar(project_id: int, db: Session = Depends(get_db)):
 
 @router.get("/validate")
 def validate(project_id: int, db: Session = Depends(get_db)):
-    """Validation summary: computed crop water use vs. FAO WaPOR actual ET.
+    """Compare computed crop ET (ETc) against FAO WaPOR satellite actual ET.
 
-    Actual-ET validation from FAO WaPOR requires an API key (WAPOR_APIKEY). When
-    configured, this compares the model's seasonal ETc against WaPOR's satellite
-    actual evapotranspiration for the field.
+    ETc is the modelled well-watered crop demand; WaPOR AETI is the observed
+    actual evapotranspiration for the 300 m pixel over the field. Their ratio
+    (AETI/ETc) indicates how closely real conditions met the crop demand.
     """
-    import os
+    from datetime import date, timedelta
+    from ..weather import wapor as wapor_client
+
     proj = _proj(db, project_id)
     res = services.run_schedule(proj)
-    wapor_ready = bool(os.environ.get("WAPOR_APIKEY"))
-    return {
-        "computed": {
-            "seasonal_etc_mm": res.summary.total_etc,
-            "seasonal_eto_mm": res.summary.total_eto,
-            "gross_applied_mm": res.summary.total_gross_depth,
-            "days": res.summary.days,
-        },
-        "wapor": {
-            "configured": wapor_ready,
-            "actual_et_mm": None,
-            "message": ("Set WAPOR_APIKEY to fetch FAO WaPOR actual ET for this "
-                        "field and compare against the computed ETc."
-                        if not wapor_ready else
-                        "WaPOR configured — actual-ET retrieval runs per field geometry."),
-        },
+    computed = {
+        "seasonal_etc_mm": res.summary.total_etc,
+        "seasonal_eto_mm": res.summary.total_eto,
+        "gross_applied_mm": res.summary.total_gross_depth,
+        "days": res.summary.days,
     }
+
+    if not res.daily:
+        raise HTTPException(400, "No schedule days to validate.")
+    span_start = date.fromisoformat(res.daily[0].the_date)
+    span_end = date.fromisoformat(res.daily[-1].the_date)
+    # WaPOR L1-AETI-D is published with a lag; clamp to a safe recent date.
+    span_end = min(span_end, date.today() - timedelta(days=10))
+
+    wapor_result: dict = {"available": wapor_client.is_ready()}
+    if not wapor_client.is_ready():
+        wapor_result["message"] = "rasterio/GDAL not installed on this server."
+    elif span_start > span_end:
+        wapor_result["message"] = ("The growing season is in the future; WaPOR "
+                                    "actual ET is only available for past dates.")
+    else:
+        try:
+            aeti = wapor_client.actual_et(proj.latitude, proj.longitude,
+                                          span_start, span_end)
+            etc_window = computed["seasonal_etc_mm"]
+            ratio = round(aeti["total_mm"] / etc_window, 3) if etc_window else None
+            wapor_result.update({
+                "actual_et_mm": aeti["total_mm"],
+                "dekads_found": aeti["dekads_found"],
+                "dekads_expected": aeti["dekads_expected"],
+                "resolution": aeti["resolution"],
+                "window": {"start": span_start.isoformat(), "end": span_end.isoformat()},
+                "ratio_aeti_over_etc": ratio,
+                "series": aeti["series"],
+                "note": ("AETI is the actual ET of the whole 300 m pixel (may include "
+                         "non-irrigated surroundings); use WaPOR L3 (30 m) where "
+                         "available for field-scale validation."),
+            })
+        except Exception as e:
+            wapor_result["message"] = f"WaPOR fetch failed: {e}"
+
+    return {"computed": computed, "wapor": wapor_result}
 
 
 @router.get("/eto-detail")

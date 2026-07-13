@@ -150,7 +150,7 @@ sources can also be fetched on their own.
 | **Copernicus ERA5** | driver (#2) | none | ERA5 reanalysis via the Open-Meteo archive |
 | **NOAA CDO (GHCND)** | driver (#3) | `NOAA_TOKEN` | Station Tmax/Tmin/precip |
 | **Open-Meteo** | driver (#4) | none | Operational model, recent past + forecast |
-| **FAO WaPOR** | validation | `WAPOR_APIKEY` | Actual ET, compared vs. computed ETc |
+| **FAO WaPOR** | validation | none | Satellite **actual ET** (L1-AETI-D, 300 m), compared vs. computed ETc |
 
 **Merge engine** (`app/weather/`):
 * HTTP helper with **retries + exponential backoff** on 429/5xx/timeouts.
@@ -166,6 +166,18 @@ Wind is normalised to 2 m (FAO-56 Eq. 47), NASA solar units are auto-detected an
 converted to MJ/m²/day, and humidity is reconciled across sources. Coordinates
 come from the selected **city** (~95 Saudi cities, all 13 regions). Leave the date
 range empty to fetch the crop's whole growing season.
+
+### Model validation — FAO WaPOR actual ET
+
+The **Reports** page can validate the model against **FAO WaPOR** satellite
+actual evapotranspiration (open data, no key). For the growing-season window it
+reads the public `L1-AETI-D` dekadal **Cloud-Optimized GeoTIFFs** (global, 300 m)
+directly from Google Cloud Storage via GDAL `/vsicurl/` **windowed reads** — only
+the bytes for the field's single pixel are fetched (not the global raster),
+several dekads in parallel. It reports computed **ETc** vs. observed **AETI** and
+their ratio. Needs `rasterio` (bundled GDAL); if unavailable the feature reports
+so gracefully. Note: the 300 m pixel may include non-irrigated surroundings —
+use WaPOR L3 (30 m) where available for field-scale checks.
 
 ### Endpoints
 * `GET  /api/projects/{id}/climate/sources` — provider availability

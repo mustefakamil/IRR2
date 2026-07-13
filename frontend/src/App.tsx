@@ -50,8 +50,15 @@ export function App() {
     setSelectedId((cur) => (cur && p.some((x) => x.id === cur) ? cur : p[0]?.id ?? null));
   }, []);
 
+  const [full, setFull] = useState<Project | null>(null);
+
   useEffect(() => { if (authed) refreshProjects(); }, [refreshProjects, authed]);
   useEffect(() => { if (selectedId) localStorage.setItem("pid", String(selectedId)); }, [selectedId]);
+  // Pages need the full project (system, coordinates, salinity…), not the summary.
+  useEffect(() => {
+    if (authed && selectedId) api.project(selectedId).then(setFull).catch(() => setFull(null));
+    else setFull(null);
+  }, [authed, selectedId, projects]);
 
   const showToast = (m: string) => { setToast(m); setTimeout(() => setToast(null), 2600); };
   const toggle = () => { const n = lang === "en" ? "ar" : "en"; setLang(n); localStorage.setItem("lang", n); };
@@ -109,7 +116,7 @@ export function App() {
 
           <div className="content">
             {view === "dashboard" && (
-              <Dashboard project={selected}
+              <Dashboard project={full}
                 onGoNew={() => { setEditId(null); go("new"); }}
                 onLoadSample={async () => { await api.loadSample(); await refreshProjects(); showToast("Sample project loaded"); go("dashboard"); }} />
             )}
@@ -124,10 +131,10 @@ export function App() {
               <ProjectForm editId={editId}
                 onSaved={async (p) => { await refreshProjects(); setSelectedId(p.id); showToast("Project saved"); go("dashboard"); }} />
             )}
-            {view === "climate" && <Climate project={selected} onChanged={() => showToast("Climate updated")} />}
-            {view === "schedule" && <Schedule project={selected} />}
-            {view === "calendar" && <CalendarView project={selected} />}
-            {view === "reports" && <Reports project={selected} />}
+            {view === "climate" && <Climate project={full} onChanged={() => showToast("Climate updated")} />}
+            {view === "schedule" && <Schedule project={full} />}
+            {view === "calendar" && <CalendarView project={full} />}
+            {view === "reports" && <Reports project={full} />}
             {view === "crops" && <Crops />}
           </div>
         </div>
