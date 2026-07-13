@@ -1,7 +1,12 @@
-// SVG rendition of the SmartPonics Global Consult mark: an intertwined
-// green→blue helix ribbon with a sprouting leaf. Scalable and self-contained.
+// SmartPonics Global Consult logo. Uses the embedded high-res PNG when provided
+// (see logoData.ts); otherwise falls back to a self-contained SVG rendition.
+import { LOGO_PNG } from "./logoData";
 
 export function LogoMark({ size = 48 }: { size?: number }) {
+  if (LOGO_PNG) {
+    return <img src={LOGO_PNG} alt="SmartPonics"
+      style={{ height: size * 1.15, width: "auto", objectFit: "contain" }} />;
+  }
   return (
     <svg width={size} height={size * 1.15} viewBox="0 0 120 138" fill="none"
       xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SmartPonics">
@@ -35,6 +40,11 @@ export function LogoMark({ size = 48 }: { size?: number }) {
 }
 
 export function LogoFull({ size = 64, stacked = true }: { size?: number; stacked?: boolean }) {
+  // The PNG lockup already includes the wordmark, so show it alone.
+  if (LOGO_PNG) {
+    return <img src={LOGO_PNG} alt="SmartPonics Global Consult"
+      style={{ height: size * 2.1, width: "auto", maxWidth: "100%", objectFit: "contain" }} />;
+  }
   return (
     <div style={{ display: "flex", flexDirection: stacked ? "column" : "row",
       alignItems: "center", gap: stacked ? 6 : 12 }}>
