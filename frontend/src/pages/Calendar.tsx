@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, Project } from "../api";
+import { api, ensureClimateThen, Project } from "../api";
 import { useLang } from "../i18n";
 
 const STATUS_KEYS = ["no_irrigation", "irrigation_required", "rainfall_event", "water_stress_risk", "high_et"];
@@ -16,7 +16,9 @@ export function CalendarView({ project }: { project: Project | null }) {
 
   useEffect(() => {
     if (!project) { setEvents([]); return; }
-    api.calendar(project.id).then((r) => setEvents(r.events)).catch((e) => setErr(e.message));
+    setErr(null);
+    ensureClimateThen(project.id, () => api.calendar(project.id))
+      .then((r) => setEvents(r.events)).catch((e) => setErr(e.message));
   }, [project?.id]);
 
   if (!project) return <div className="empty-state"><div className="big">📅</div><p>{t("no_project")}</p></div>;

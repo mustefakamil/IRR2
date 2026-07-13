@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, Project, Summary } from "../api";
+import { api, ensureClimateThen, Project, Summary } from "../api";
 import { useLang } from "../i18n";
 import { EtcAetiBars, EtcAetiCumulative } from "../components/Charts";
 
@@ -13,8 +13,9 @@ export function Reports({ project }: { project: Project | null }) {
 
   useEffect(() => {
     if (!project) { setSummary(null); return; }
-    setVal(null);
-    api.schedule(project.id).then((r) => setSummary(r.summary)).catch((e) => setErr(e.message));
+    setVal(null); setErr(null);
+    ensureClimateThen(project.id, () => api.schedule(project.id))
+      .then((r) => setSummary(r.summary)).catch((e) => setErr(e.message));
   }, [project?.id]);
 
   const runValidation = async () => {

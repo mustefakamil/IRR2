@@ -33,7 +33,7 @@ _UA = {"User-Agent": "FAO56-Irrigation/1.1 (+https://github.com/mustefakamil/IRR
 
 
 def http_get_json(url: str, headers: dict | None = None,
-                  retries: int = 3, timeout: int = 60) -> dict:
+                  retries: int = 3, timeout: int = 35) -> dict:
     """GET JSON with retries + exponential backoff on rate-limit / 5xx / timeout."""
     hdrs = {**_UA, **(headers or {})}
     last: Exception | None = None

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, Project } from "../api";
+import { api, ensureClimateThen, Project } from "../api";
 import { useLang } from "../i18n";
 import { EtEtcChart, KcChart, SwbChart, WaterChart } from "../components/Charts";
 
@@ -9,11 +9,14 @@ export function Dashboard({ project, onGoNew, onLoadSample }:
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
 
   useEffect(() => {
     if (!project) { setData(null); return; }
-    setLoading(true); setErr(null);
-    api.dashboard(project.id).then(setData).catch((e) => setErr(e.message)).finally(() => setLoading(false));
+    setLoading(true); setErr(null); setProvisioning(false);
+    ensureClimateThen(project.id, () => api.dashboard(project.id), () => setProvisioning(true))
+      .then(setData).catch((e) => setErr(e.message))
+      .finally(() => { setLoading(false); setProvisioning(false); });
   }, [project?.id]);
 
   if (!project) return (
@@ -27,7 +30,7 @@ export function Dashboard({ project, onGoNew, onLoadSample }:
     </div>
   );
 
-  if (loading) return <div className="spinner">{t("loading")}</div>;
+  if (loading) return <div className="spinner">{provisioning ? t("provisioning") : t("loading")}</div>;
   if (err) return <div className="err">{err}</div>;
   if (!data) return null;
 

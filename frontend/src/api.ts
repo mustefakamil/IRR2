@@ -52,6 +52,24 @@ async function downloadFile(path: string, fallbackName: string): Promise<void> {
   URL.revokeObjectURL(url);
 }
 
+// Run a data fetch; if it fails because the project has no climate yet,
+// auto-provision climate (NASA/forecast/normals) and retry once. Makes the
+// "no climate data" state self-healing on any results page.
+export async function ensureClimateThen<T>(
+  projectId: number, fn: () => Promise<T>, onProvisioning?: () => void
+): Promise<T> {
+  try {
+    return await fn();
+  } catch (e: any) {
+    if (String(e?.message ?? "").toLowerCase().includes("climate")) {
+      onProvisioning?.();
+      await api.autoClimate(projectId);
+      return await fn();
+    }
+    throw e;
+  }
+}
+
 export interface Crop {
   id: number; name_en: string; name_ar: string; scientific_name: string;
   category: string; l_ini: number; l_dev: number; l_mid: number; l_late: number;

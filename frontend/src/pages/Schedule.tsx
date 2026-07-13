@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { api, Project, DailyRow, Summary } from "../api";
+import { api, ensureClimateThen, Project, DailyRow, Summary } from "../api";
 import { useLang } from "../i18n";
 
 export function Schedule({ project }: { project: Project | null }) {
@@ -8,17 +8,20 @@ export function Schedule({ project }: { project: Project | null }) {
   const [summary, setSummary] = useState<Summary | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [provisioning, setProvisioning] = useState(false);
   const [detailDate, setDetailDate] = useState<string | null>(null);
 
   useEffect(() => {
     if (!project) { setDaily([]); return; }
-    setLoading(true); setErr(null);
-    api.schedule(project.id).then((r) => { setDaily(r.daily); setSummary(r.summary); })
-      .catch((e) => setErr(e.message)).finally(() => setLoading(false));
+    setLoading(true); setErr(null); setProvisioning(false);
+    ensureClimateThen(project.id, () => api.schedule(project.id), () => setProvisioning(true))
+      .then((r) => { setDaily(r.daily); setSummary(r.summary); })
+      .catch((e) => setErr(e.message))
+      .finally(() => { setLoading(false); setProvisioning(false); });
   }, [project?.id]);
 
   if (!project) return <div className="empty-state"><div className="big">💧</div><p>{t("no_project")}</p></div>;
-  if (loading) return <div className="spinner">{t("loading")}</div>;
+  if (loading) return <div className="spinner">{provisioning ? t("provisioning") : t("loading")}</div>;
   if (err) return <div className="err">{err}</div>;
 
   const cols = ["Day", "Date", "Jday", "Stage", "ETo", "Kc", "ETc", "Rain", "Pe", "LR", "IWR",
